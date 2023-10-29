@@ -13,7 +13,7 @@ int main() {
     int numSats = 0;
 
     // Replace with the path to your RINEX navigation file
-    const char* filePath = "0lov033b.04n";
+    const char* filePath = "Data/0lov033b.04n";
 
     // Read file
     file = fopen(filePath, "r");
@@ -35,7 +35,7 @@ int main() {
             fgets(line, MAX_LINE_LENGTH, file);
             sscanf(line + 3, "%12lf", &navData.epochInfo);
             fgets(line, MAX_LINE_LENGTH, file);
-            
+
             sscanf(line + 22, "%19lf%19lf%19lf", &navData.clockBias, &navData.clockDrift, &navData.clockDriftRate);
             //navData.af0 = atoi(line + 22);
             break; // We found the data for PRN 1; exit the loop

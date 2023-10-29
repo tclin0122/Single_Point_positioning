@@ -4,11 +4,12 @@ This is the algorithm for GNSS single point positioning, it is implemented in C.
 ```bash
 ├── src
 │   ├── main.c
-├── Data
-│   ├── .n file
-│   ├── .o file
+│   ├── Rinex_reader.c
+│   └── Data
+│      ├── .n file
+│      └── .o file
 ├── Doc
-│   ├── SPP algorithm.pdf
+│   └── SPP algorithm.pdf
 └── README.md
 ```
 
