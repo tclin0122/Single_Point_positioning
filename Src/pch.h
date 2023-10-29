@@ -2,11 +2,13 @@
 #define PCH_H
 
 // TODO: add pre-compiled headers here
-#include <stdio.h>  // for standard input/output
-#include <string.h> // for string manipulation
-#include <stdlib.h> // for memory allocation
-#include <ctype.h>  // for character classification functions
-#include <stddef.h> // for standard definitions
-#include <stdbool.h> // for boolean type support
+#include <iostream>
+#include <iomanip>  
+#include <string>
+#include <fstream>
+#include <sstream> 
+#include <iterator>
+#include <map>
+#include <vector>
 
-#endif // PCH_H
+#endif //PCH_H
