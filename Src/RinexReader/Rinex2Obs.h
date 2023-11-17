@@ -57,7 +57,7 @@ public:
 	void clearHeader();
 	void obsHeader(std::ifstream& infile);
 	void obsEpoch(std::ifstream& infile, std::ofstream& logfile, int nObsTypes);
-	std::map<int, double> Rinex2Obs::specificObsMapper(std::map<int, std::vector<double>> obsGPS, std::vector<std::string> obsTypes, std::string specificObs);
+	std::map<int, double> specificObsMapper(std::map<int, std::vector<double>> obsGPS, std::vector<std::string> obsTypes, std::string specificObs);
 
 private:
 
