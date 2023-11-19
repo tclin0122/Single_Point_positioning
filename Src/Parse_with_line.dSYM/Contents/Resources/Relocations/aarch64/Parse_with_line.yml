@@ -1,8 +1,0 @@
----
-triple:          'arm64-apple-darwin'
-binary-path:     '/Users/tclin/Single_Point_positioning/Src/Parse_with_line'
-relocations:
-  - { offsetInCU: 0x26, offset: 0x26, size: 0x8, addend: 0x0, symName: _replaceDWithE, symObjAddr: 0x0, symBinAddr: 0x100003438, symSize: 0xB0 }
-  - { offsetInCU: 0x42, offset: 0x42, size: 0x8, addend: 0x0, symName: _replaceDWithE, symObjAddr: 0x0, symBinAddr: 0x100003438, symSize: 0xB0 }
-  - { offsetInCU: 0x90, offset: 0x90, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0xB0, symBinAddr: 0x1000034E8, symSize: 0x930 }
-...

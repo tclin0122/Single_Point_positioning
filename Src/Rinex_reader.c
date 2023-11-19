@@ -11,17 +11,13 @@ void replaceDWithE(char *str) {
     }
 }
 
-int main() {
+int rinex_reader(const char* filePath) {
     FILE* file;
     char line[MAX_LINE_LENGTH];
-    struct DataGPS navData;
+    struct DataGPS navData[PRN_MAX];
     int numSats = 0;
-    double rinex_version;
-    int cnt=1;
-
-    // Replace with the path to your RINEX navigation file
-    const char* filePath = "Data/0lov033b.04n";
-
+    int cnt = 1;
+    
     // Read file
     file = fopen(filePath, "r");
     if (file == NULL) {
@@ -40,22 +36,23 @@ int main() {
     while (fgets(line, sizeof(line), file) != NULL) {
         double data1, data2, data3, data4;
         double data5, data6, data7, data8, data9, data10;
+        int data11;
         // Extract data as needed
         replaceDWithE(line);
         // Map the data line by line
         switch (cnt)
         {
         case 1:
-            if (sscanf(line, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", &data1, &data2, &data3, &data4, &data5, &data6, &data7, &data8, &data9, &data10) == 10) {
+            if (sscanf(line, "%d%lf%lf%lf%lf%lf%lf%lf%lf%lf", &data11, &data2, &data3, &data4, &data5, &data6, &data7, &data8, &data9, &data10) == 10) {
             // Process the extracted data
             printf("print line = %d\n",cnt);
             printf("print line = %s\n",line);
             // Assign value
-            navData.PRN = data1;
-            navData.clockBias = data8;
-            navData.clockDrift = data9;
-            navData.clockDriftRate = data10;
-            printf("Data: %d %.19lf %.19lf %.19lf\n", navData.PRN, navData.clockBias, navData.clockDrift, navData.clockDriftRate);
+            navData[data11].PRN = data11;
+            navData[data11].clockBias = data8;
+            navData[data11].clockDrift = data9;
+            navData[data11].clockDriftRate = data10;
+            printf("Data: %d %.19lf %.19lf %.19lf\n", navData[data11].PRN, navData[data11].clockBias, navData[data11].clockDrift, navData[data11].clockDriftRate);
             cnt++;
             }
             /*
@@ -71,11 +68,11 @@ int main() {
             printf("print line = %d\n",cnt);
             printf("print line = %s\n",line);
             // Assign value
-            navData.IODE = data1;
-            navData.Crs = data2;
-            navData.Delta_n = data3;
-            navData.Mo = data4;
-            printf("Data: %.12lf %.12lf %.12lf %.12lf\n", navData.IODE, navData.Crs, navData.Delta_n, navData.Mo);
+            navData[data11].IODE = data1;
+            navData[data11].Crs = data2;
+            navData[data11].Delta_n = data3;
+            navData[data11].Mo = data4;
+            printf("Data: %.12lf %.12lf %.12lf %.12lf\n", navData[data11].IODE, navData[data11].Crs, navData[data11].Delta_n, navData[data11].Mo);
             cnt++;
             }
             /*
@@ -91,11 +88,11 @@ int main() {
             printf("print line = %d\n",cnt);
             printf("print line = %s\n",line);
             // Assign value
-            navData.Cuc = data1;
-            navData.Eccentricity = data2;
-            navData.Cus = data3;
-            navData.Sqrt_a = data4;
-            printf("Data: %.12lf %.12lf %.12lf %.12lf\n", navData.Cuc, navData.Eccentricity, navData.Cus, navData.Sqrt_a);
+            navData[data11].Cuc = data1;
+            navData[data11].Eccentricity = data2;
+            navData[data11].Cus = data3;
+            navData[data11].Sqrt_a = data4;
+            printf("Data: %.12lf %.12lf %.12lf %.12lf\n", navData[data11].Cuc, navData[data11].Eccentricity, navData[data11].Cus, navData[data11].Sqrt_a);
             cnt++;
             }
             /*
@@ -111,11 +108,11 @@ int main() {
             printf("print line = %d\n",cnt);
             printf("print line = %s\n",line);
             // Assign value
-            navData.TOE = data1;
-            navData.Cic = data2;
-            navData.OMEGA = data3;
-            navData.CIS = data4;
-            printf("Data: %.12lf %.12lf %.12lf %.12lf\n", navData.TOE, navData.Cic, navData.OMEGA, navData.CIS);
+            navData[data11].TOE = data1;
+            navData[data11].Cic = data2;
+            navData[data11].OMEGA = data3;
+            navData[data11].CIS = data4;
+            printf("Data: %.12lf %.12lf %.12lf %.12lf\n", navData[data11].TOE, navData[data11].Cic, navData[data11].OMEGA, navData[data11].CIS);
             cnt++;
             }
             /*
@@ -131,11 +128,11 @@ int main() {
             printf("print line = %d\n",cnt);
             printf("print line = %s\n",line);
             // Assign value
-            navData.Io = data1;
-            navData.Crc = data2;
-            navData.Omega = data3;
-            navData.Omega_dot = data4;
-            printf("Data: %.12lf %.12lf %.12lf %.12lf\n", navData.Io, navData.Crc, navData.Omega, navData.Omega_dot);
+            navData[data11].Io = data1;
+            navData[data11].Crc = data2;
+            navData[data11].Omega = data3;
+            navData[data11].Omega_dot = data4;
+            printf("Data: %.12lf %.12lf %.12lf %.12lf\n", navData[data11].Io, navData[data11].Crc, navData[data11].Omega, navData[data11].Omega_dot);
             cnt++;
             }
             /*
@@ -151,11 +148,11 @@ int main() {
             printf("print line = %d\n",cnt);
             printf("print line = %s\n",line);
             // Assign value
-            navData.IDOT = data1;
-            navData.L2_codes_channel = data2;
-            navData.GPS_week = data3;
-            navData.L2_P_data_flag = data4;
-            printf("Data: %.12lf %.12lf %.12lf %.12lf\n", navData.IDOT, navData.L2_codes_channel, navData.GPS_week, navData.L2_P_data_flag);
+            navData[data11].IDOT = data1;
+            navData[data11].L2_codes_channel = data2;
+            navData[data11].GPS_week = data3;
+            navData[data11].L2_P_data_flag = data4;
+            printf("Data: %.12lf %.12lf %.12lf %.12lf\n", navData[data11].IDOT, navData[data11].L2_codes_channel, navData[data11].GPS_week, navData[data11].L2_P_data_flag);
             cnt++;
             }
             /*
@@ -171,11 +168,11 @@ int main() {
             printf("print line = %d\n",cnt);
             printf("print line = %s\n",line);
             // Assign value
-            navData.svAccuracy = data1;
-            navData.svHealth = data2;
-            navData.TGD = data3;
-            navData.IODC = data4;
-            printf("Data: %.12lf %.12lf %.12lf %.12lf\n", navData.svAccuracy,  navData.svHealth, navData.TGD, navData.IODC);
+            navData[data11].svAccuracy = data1;
+            navData[data11].svHealth = data2;
+            navData[data11].TGD = data3;
+            navData[data11].IODC = data4;
+            printf("Data: %.12lf %.12lf %.12lf %.12lf\n", navData[data11].svAccuracy,  navData[data11].svHealth, navData[data11].TGD, navData[data11].IODC);
             cnt++;
             }
             /*
@@ -192,8 +189,8 @@ int main() {
             printf("print line = %d\n",cnt);
             printf("print line = %s\n",line);
             // Assign value
-            navData.transmission_time = data1;
-            printf("Data: %.12lf\n", navData.transmission_time);
+            navData[data11].transmission_time = data1;
+            printf("Data: %.12lf\n", navData[data11].transmission_time);
             cnt = 1;
             }
             /*

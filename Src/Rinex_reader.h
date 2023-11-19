@@ -7,8 +7,10 @@
 #define RINEX_READER_H_
 
 #define MAX_LINE_LENGTH 80
-#define NAVEXP "D"                 /* exponent letter in RINEX NAV */
+#define PRN_MAX 32
 
+
+int rinex_reader(const char* filePath);
 
 // Data Structures
 struct NavHeaderGPS {
