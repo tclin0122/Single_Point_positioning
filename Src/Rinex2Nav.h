@@ -1,5 +1,5 @@
-#ifndef RINEX_READER_H_
-#define RINEX_READER_H_
+#ifndef RINEX2NAV_H_
+#define RINEX2NAV_H_
 
 #define MAX_LINE_LENGTH 80
 #define PRN_MAX 32
@@ -56,4 +56,4 @@ struct DataGPS {
 
 int rinex2nav(const char* filePath, struct DataGPS *navData);
 
-#endif /* RINEX_READER_H_ */
+#endif /* RINEX2NAV_H_ */
