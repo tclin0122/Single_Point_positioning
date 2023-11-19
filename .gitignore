@@ -1,3 +1,4 @@
 *.dSYM
 Rinex_reader
+.DS_Store
 

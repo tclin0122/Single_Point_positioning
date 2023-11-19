@@ -11,13 +11,13 @@ void replaceDWithE(char *str) {
     }
 }
 
-int rinex_reader(const char* filePath) {
+int rinex_reader(const char* filePath, struct DataGPS *navData) {
     FILE* file;
     char line[MAX_LINE_LENGTH];
-    struct DataGPS navData[PRN_MAX];
+
     int numSats = 0;
     int cnt = 1;
-    
+
     // Read file
     file = fopen(filePath, "r");
     if (file == NULL) {

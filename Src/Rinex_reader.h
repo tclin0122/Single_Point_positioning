@@ -9,9 +9,6 @@
 #define MAX_LINE_LENGTH 80
 #define PRN_MAX 32
 
-
-int rinex_reader(const char* filePath);
-
 // Data Structures
 struct NavHeaderGPS {
     // Ionospheric alpha and beta constants
@@ -58,6 +55,6 @@ struct DataGPS {
     double fit_interval;
 }; 
 
-
+int rinex_reader(const char* filePath, struct DataGPS *navData);
 
 #endif /* RINEX_READER_H_ */
