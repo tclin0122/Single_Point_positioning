@@ -1,2 +1,2 @@
-Main: Src/Rinex_reader.c Src/main.c
+Main: Src/Rinex2Nav.c Src/main.c
 	$(CC) $^ -I Src -o $@

@@ -1,13 +1,12 @@
-
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>  // Include the stdlib.h header for atoi
-
 #ifndef RINEX_READER_H_
 #define RINEX_READER_H_
 
 #define MAX_LINE_LENGTH 80
 #define PRN_MAX 32
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>  // Include the stdlib.h header for atoi
 
 // Data Structures
 struct NavHeaderGPS {
@@ -55,6 +54,6 @@ struct DataGPS {
     double fit_interval;
 }; 
 
-int rinex_reader(const char* filePath, struct DataGPS *navData);
+int rinex2nav(const char* filePath, struct DataGPS *navData);
 
 #endif /* RINEX_READER_H_ */

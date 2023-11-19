@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "Rinex_reader.h"
+#include "Rinex2Nav.h"
 
 void replaceDWithE(char *str) {
     int len = strlen(str);
@@ -11,7 +11,7 @@ void replaceDWithE(char *str) {
     }
 }
 
-int rinex_reader(const char* filePath, struct DataGPS *navData) {
+int rinex2nav(const char* filePath, struct DataGPS *navData) {
     FILE* file;
     char line[MAX_LINE_LENGTH];
 
@@ -209,5 +209,3 @@ int rinex_reader(const char* filePath, struct DataGPS *navData) {
     fclose(file);
     return 0;
 }
-
-
