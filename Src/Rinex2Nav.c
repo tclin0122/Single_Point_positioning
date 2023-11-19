@@ -14,7 +14,6 @@ void replaceDWithE(char *str) {
 int rinex2nav(const char* filePath, struct DataGPS *navData) {
     FILE* file;
     char line[MAX_LINE_LENGTH];
-
     int numSats = 0;
     int cnt = 1;
 
