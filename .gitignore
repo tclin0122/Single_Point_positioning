@@ -1,4 +1,5 @@
 *.dSYM
 Main
 .DS_Store
+.vscode
 
