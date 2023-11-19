@@ -2,14 +2,6 @@
 #include <stdlib.h>
 #include "Rinex_reader.h"
 
-void replaceDWithE(char *str) {
-    int len = strlen(str);
-    for (int i = 0; i < len; i++) {
-        if (str[i] == 'D' || str[i] == 'd') {
-            str[i] = 'e';
-        }
-    }
-}
 
 int main() {
     FILE* file;
@@ -39,12 +31,21 @@ int main() {
     // Read data lines
     while (fgets(line, sizeof(line), file) != NULL) {
         // Extract data as needed
-        replaceDWithE(line);
-        double data1, data2, data3, data4;
-        if (sscanf(line, "%lf%lf%lf%lf", &data1, &data2, &data3, &data4) == 4) {
+        double data1, data2, data3, data4, data5, data6, data7, data8, data9, data10;
+        if(cnt == 0){
+            sscanf(line, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", &data1, &data2, &data3, &data4, &data5, &data6, &data7, &data8, &data9, &data10);
+            printf("Data: %lf %lf %lf\n", data8, data9, data10);
+            cnt++;
+        }
+        else if (cnt >= 0 && cnt <=7) {
             // Process the extracted data
-            printf("print line = %s\n",line);
+            sscanf(line, "%lf%lf%lf%lf", &data1, &data2, &data3, &data4);
+            printf("print line = %d",cnt);
             printf("Data: %lf %lf %lf %lf\n", data1, data2, data3, data4);
+            cnt++;
+        } else if ( cnt>7 ) {
+            sscanf(line, "%lf", &data1);
+            cnt=0;
         } else {
             // Handle the case where the line does not match the expected format
             printf("Error reading data from line: %s", line);
@@ -54,5 +55,3 @@ int main() {
     fclose(file);
     return 0;
 }
-
-
