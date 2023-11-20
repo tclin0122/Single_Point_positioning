@@ -9,16 +9,18 @@
 #include <stdlib.h>  // Include the stdlib.h header for atoi
 
 struct ObsHeaderInfo {
-    	char rinexType;
-		double approxPosXYZ;
-		double antDeltaHEN;
-		double firstObsTime;
-		double lastObsTime;
-		char obsTypes;
+    	double rinexType;
+		double approxPosX;
+        double approxPosY;
+        double approxPosZ;
+		// double antDeltaHEN;
+		// double firstObsTime;
+		// double lastObsTime;
+		// char obsTypes;
 };
 
 struct ObsSat {
-    	char PRN_list;
+    	double PRN_list;
 };
 
 struct ObsData {
@@ -33,7 +35,7 @@ struct ObsData {
 
 
 
-int rinex2obs(const char* filePath, struct ObsData *obsData);
+int rinex2obs(const char* filePath, struct ObsData *obsData, struct ObsHeaderInfo *obsHead);
 
 
 #endif /* RINEX2OBS_H_ */
