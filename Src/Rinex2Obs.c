@@ -17,6 +17,7 @@ int rinex2obs(const char* filePath, struct ObsData *obsData, struct ObsHeaderInf
     int cnt = 1;
     int prn_index = 1;
 
+    printf("Read ObsData\n");
     // Read file
     file = fopen(filePath, "r");
     if (file == NULL) {
@@ -119,6 +120,7 @@ int rinex2obs(const char* filePath, struct ObsData *obsData, struct ObsHeaderInf
             }
         }
         }
+    printf("Complete ObsData reading\n");
     // Close the file
     fclose(file);
     return 0;
