@@ -20,7 +20,8 @@ struct ObsHeaderInfo {
 };
 
 struct ObsSat {
-    	double PRN_list;
+		int GPS_num;
+		int PRN_list[PRN_MAX];
 };
 
 struct ObsData {
@@ -35,7 +36,7 @@ struct ObsData {
 
 
 
-int rinex2obs(const char* filePath, struct ObsData *obsData, struct ObsHeaderInfo *obsHead);
+int rinex2obs(const char* filePath, struct ObsData *obsData, struct ObsHeaderInfo *obsHead, struct ObsSat *satlist);
 
 
 #endif /* RINEX2OBS_H_ */
