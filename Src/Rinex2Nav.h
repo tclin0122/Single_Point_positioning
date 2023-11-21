@@ -37,7 +37,7 @@ struct DataGPS {
     double TOE;
     double Cic;
     double OMEGA;
-    double CIS;
+    double Cis;
     double Io;
     double Crc;
     double Omega;

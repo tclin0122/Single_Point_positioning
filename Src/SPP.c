@@ -9,12 +9,14 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
     double pi = 3.1415926535898; //Pi
     double mu = 3.986005 * pow(10,14);
     double Omeg_dot_earth = 7.2921151467 * pow(10,-5);
+    double F = -4.442807633 * pow(10,-10);
     int timediff = 3600; //need to use parsing time!
     int index = 0;
     printf("Start Single Point Positioning\n");
     double signal_propagation_time, nominal_transmission_time, GPS_Sat_time_diff, relativistic_correction;
     double GPS_clk_correction, system_transmission_time, A, mean_motion, corrected_mean_motion, tk;
-    double Mean_anomaly, E0, Ek;
+    double Mean_anomaly, E0, Ek, a, b, vk, lat_k, lat_correction, radi_correction, inclin_correction;
+    double corrected_lat, corrected_radi, corrected_inclin;
     //PRN
     printf("%d\n",satlist->PRN_list[index]);
     //Compute signal propagation time
@@ -52,7 +54,29 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
         E0 = Ek;
     }
     printf("Ek = %.19lf\n",Ek);
+    relativistic_correction = F * navData[satlist->PRN_list[index]].Eccentricity * navData[satlist->PRN_list[index]].Sqrt_a 
+                              * sin(Ek);
+    printf("%.19lf\n",relativistic_correction); 
+    //Compute satellite coordinates Xs, Ys, Zs
+    Ek = -1.7688264606399397398236685000349;
+    a = (sqrt(1.0 - pow(navData[satlist->PRN_list[index]].Eccentricity,2)) * sin(Ek)) / (1.0 - navData[satlist->PRN_list[index]].Eccentricity * cos(Ek));
+    printf("%lf\n",a);
+    b = (cos(Ek) - navData[satlist->PRN_list[index]].Eccentricity) / (1.0 - navData[satlist->PRN_list[index]].Eccentricity * cos(Ek));
+    printf("%lf\n",b);
+    vk = atan2 ( a , b );
+    printf("%lf\n",vk);
+    lat_k = vk + navData[satlist->PRN_list[index]].Omega;
+    printf("%lf\n",lat_k);
+    lat_correction = navData[satlist->PRN_list[index]].Cus * sin(2 * lat_k) + navData[satlist->PRN_list[index]].Cuc * cos(2 * lat_k);
+    radi_correction = navData[satlist->PRN_list[index]].Crs * sin(2 * lat_k) + navData[satlist->PRN_list[index]].Crc * cos(2 * lat_k);
+    inclin_correction = navData[satlist->PRN_list[index]].Cis * sin(2 * lat_k) +navData[satlist->PRN_list[index]].Cic * cos(2 * lat_k);
+    corrected_lat = lat_k + lat_correction;
+    corrected_radi = A * (1 - navData[satlist->PRN_list[index]].Eccentricity * cos(Ek)) + radi_correction;
+    corrected_inclin = navData[satlist->PRN_list[index]].Io + inclin_correction + navData[satlist->PRN_list[index]].IDOT * tk;
+    printf("%lf\n",corrected_lat);
+
     
+
 
 
     return 0;

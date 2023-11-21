@@ -93,7 +93,7 @@ int rinex2nav(const char* filePath, struct DataGPS *navData) {
             navData[data11].TOE = data1;
             navData[data11].Cic = data2;
             navData[data11].OMEGA = data3;
-            navData[data11].CIS = data4;
+            navData[data11].Cis = data4;
             //printf("Data: %.12lf %.12lf %.12lf %.12lf\n", navData[data11].TOE, navData[data11].Cic, navData[data11].OMEGA, navData[data11].CIS);
             cnt++;
             }
