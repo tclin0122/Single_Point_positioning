@@ -15,7 +15,7 @@ int rinex2obs(const char* filePath, struct ObsData *obsData, struct ObsHeaderInf
     FILE* file;
     char line[MAX_LINE_LENGTH];
     int cnt = 1;
-    int prn_index = 1;
+    int prn_index = 0;
 
     printf("Read ObsData\n");
     // Read file
