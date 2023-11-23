@@ -2,8 +2,10 @@
 #include <stdlib.h>
 #include <math.h>
 #include "SPP.h"
+#include "Rinex2Obs.h"
 
 void Cart2Ecip (double X, double Y, double Z, double *lat, double *lon);
+void relative_position (double X, double X_a, double Y, double Y_a, double Z, double Z_a, double lat, double lon, double *zij);
 
 int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *obsHead, struct ObsSat *satlist) {
     //constant from GPS ICD
@@ -24,7 +26,8 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
     double corrected_lat, corrected_radi, corrected_inclin, x_in_orb, y_in_orb, corrected_ascending_node;
     double X_s[satlist->GPS_num], Y_s[satlist->GPS_num], Z_s[satlist->GPS_num];
 
-    double lat, lon;
+    double lat, lon, zij;
+    double Zenith[satlist->GPS_num];
     printf("Start Single Point Positioning\n");
 
     //Start the loop
@@ -99,6 +102,14 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
     Cart2Ecip(obsHead->approxPosX,obsHead->approxPosY,obsHead->approxPosZ,&lat, &lon);
     printf("lat = %f\n",lat);
     printf("lon = %f\n",lon);
+    
+    index = 0;
+    while (index < satlist->GPS_num) {
+        relative_position (X_s[index], obsHead->approxPosX, Y_s[index], obsHead->approxPosY, Z_s[index], obsHead->approxPosZ, lat, lon, &zij);
+        Zenith[index] = zij;
+        printf("zij = %f\n",zij/DEG_2_RADI);
+        index++;
+    }
     //Trop delay
 
     //Iono delay
@@ -134,5 +145,36 @@ void Cart2Ecip (double X, double Y, double Z, double *lat, double *lon) {
     *lat = computedLat;
     *lon = computedLon;
 }
+
+void relative_position (double X, double X_a, double Y, double Y_a, double Z, double Z_a, double lat, double lon, double *zij) {
+    double R[3][3] = {
+        {-sin(lat * DEG_2_RADI) * cos(lon * DEG_2_RADI), -sin(lon * DEG_2_RADI), cos(lat * DEG_2_RADI) * cos(lon * DEG_2_RADI)},
+        {-sin(lat * DEG_2_RADI) * sin(lon * DEG_2_RADI),  cos(lon * DEG_2_RADI), cos(lat * DEG_2_RADI) * sin(lon * DEG_2_RADI)},
+        { cos(lat * DEG_2_RADI),                          0,                     sin(lat * DEG_2_RADI)}
+    };
+    double transpose_R[3][3];
+    double Xij[3], Sij, azimuth_ij, zen_ij;
+    // computing the transpose
+    for (int row = 0; row < 3; ++row) {
+        for (int column = 0; column < 3; ++column) {
+            transpose_R[column][row] = R[row][column];
+        }
+    }
+    //Distance diff
+    X -= X_a;
+    Y -= Y_a;
+    Z -= Z_a;
+    //Multiplication
+    Xij[0] = transpose_R[0][0] * X + transpose_R[0][1] * Y + transpose_R[0][2] * Z;
+    Xij[1] = transpose_R[1][0] * X + transpose_R[1][1] * Y + transpose_R[1][2] * Z;
+    Xij[2] = transpose_R[2][0] * X + transpose_R[2][1] * Y + transpose_R[2][2] * Z;
+    //measurement quantities
+    Sij = sqrt(pow(Xij[0],2) + pow(Xij[1],2) + pow(Xij[2],2));
+    azimuth_ij = atan2(Xij[1] ,Xij[0]);
+    zen_ij = acos(Xij[2] / Sij);
+    //passed the value back
+    *zij = zen_ij;
+}
+
 
 
