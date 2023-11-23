@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <math.h>
 #include "SPP.h"
-#include "Rinex2Obs.h"
 
-void Cart2Ecip (double X, double Y, double Z, double *lat, double *lon);
+void Cart2Ecip (double X, double Y, double Z, double *lat, double *lon, double *height);
 void relative_position (double X, double X_a, double Y, double Y_a, double Z, double Z_a, double lat, double lon, double *zij);
+void iono (double Zenth, double TECU, double *d_iono);
 
 int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *obsHead, struct ObsSat *satlist) {
     //constant from GPS ICD
@@ -26,8 +26,10 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
     double corrected_lat, corrected_radi, corrected_inclin, x_in_orb, y_in_orb, corrected_ascending_node;
     double X_s[satlist->GPS_num], Y_s[satlist->GPS_num], Z_s[satlist->GPS_num];
 
-    double lat, lon, zij;
+    double lat, lon, height, zij, d_iono;
     double Zenith[satlist->GPS_num];
+    double iono_delay[satlist->GPS_num];
+    double TECU = 5.3;
     printf("Start Single Point Positioning\n");
 
     //Start the loop
@@ -99,16 +101,16 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
     }
     */
     //Carte2Ellip
-    Cart2Ecip(obsHead->approxPosX,obsHead->approxPosY,obsHead->approxPosZ,&lat, &lon);
-    printf("lat = %f\n",lat);
-    printf("lon = %f\n",lon);
-    
+    Cart2Ecip(obsHead->approxPosX,obsHead->approxPosY,obsHead->approxPosZ,&lat, &lon, &height);
+    //Get Zenith angle and do Trop and Iono
     index = 0;
     while (index < satlist->GPS_num) {
         relative_position (X_s[index], obsHead->approxPosX, Y_s[index], obsHead->approxPosY, Z_s[index], obsHead->approxPosZ, lat, lon, &zij);
         Zenith[index] = zij;
-        printf("zij = %f\n",zij/DEG_2_RADI);
         index++;
+        iono (zij, TECU, &d_iono);
+        iono_delay[index] = d_iono;
+        printf("%lf\n",d_iono);
     }
     //Trop delay
 
@@ -122,7 +124,7 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
     return 0;
 }
 
-void Cart2Ecip (double X, double Y, double Z, double *lat, double *lon) {
+void Cart2Ecip (double X, double Y, double Z, double *lat, double *lon, double *height) {
     double a = 6378137;  // semi major axis
     double fe = 1 / 298.257222101;
     double b = a - fe * a; // semi minor axis
@@ -133,9 +135,10 @@ void Cart2Ecip (double X, double Y, double Z, double *lat, double *lon) {
 
     double computedLat = 0;
     double computedLon = 0;
+    double h =0;
     while (computedLat != lat0) {
         double N0 = pow(a, 2) / sqrt(pow(a, 2) * pow(cos(lat0 * (M_PI / 180)), 2) + pow(b, 2) * pow(sin(lat0 * (M_PI / 180)), 2));
-        double h = p / cos(lat0 * (M_PI / 180)) - N0;
+        h = p / cos(lat0 * (M_PI / 180)) - N0;
         computedLat = atan2((Z / p) * pow(1 - e2 * (N0 / (N0 + h)), -1), 1) * (180 / M_PI);
         lat0 = computedLat;
         computedLon = atan2(Y, X) * (180 / M_PI);
@@ -144,6 +147,7 @@ void Cart2Ecip (double X, double Y, double Z, double *lat, double *lon) {
     //passed the value back
     *lat = computedLat;
     *lon = computedLon;
+    *height = h;
 }
 
 void relative_position (double X, double X_a, double Y, double Y_a, double Z, double Z_a, double lat, double lon, double *zij) {
@@ -176,5 +180,9 @@ void relative_position (double X, double X_a, double Y, double Y_a, double Z, do
     *zij = zen_ij;
 }
 
-
-
+void iono (double Zenith, double TECU, double *d_iono) {
+    double TEC = TECU * 1e16;
+    double OF = 1.0 - pow((Re * sin(Zenith) / (Re + hi)), 2);
+    OF = 1.0 / sqrt(OF);
+    *d_iono = (40.3 / pow(f, 2)) * TEC * OF;
+}

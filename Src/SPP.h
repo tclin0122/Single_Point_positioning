@@ -2,6 +2,9 @@
 #define SPP_H_
 
 #define DEG_2_RADI 0.0174532925
+#define Re         6371000
+#define f          1575.42e6
+#define hi         350000
 
 #include <stdio.h>
 #include <string.h>
