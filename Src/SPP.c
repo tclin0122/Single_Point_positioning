@@ -6,6 +6,9 @@
 void Cart2Ecip (double X, double Y, double Z, double *lat, double *lon, double *height);
 void relative_position (double X, double X_a, double Y, double Y_a, double Z, double Z_a, double lat, double lon, double *zij);
 void iono (double Zenth, double TECU, double *d_iono);
+void trop (double Zenth, double height, double *d_trop);
+
+
 
 int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *obsHead, struct ObsSat *satlist) {
     //constant from GPS ICD
@@ -26,9 +29,10 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
     double corrected_lat, corrected_radi, corrected_inclin, x_in_orb, y_in_orb, corrected_ascending_node;
     double X_s[satlist->GPS_num], Y_s[satlist->GPS_num], Z_s[satlist->GPS_num];
 
-    double lat, lon, height, zij, d_iono;
+    double lat, lon, height, zij, d_iono, d_trop;
     double Zenith[satlist->GPS_num];
     double iono_delay[satlist->GPS_num];
+    double trop_delay[satlist->GPS_num];
     double TECU = 5.3;
     printf("Start Single Point Positioning\n");
 
@@ -61,7 +65,6 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
             while (fabs(err_Ek) > err_tol) {
                 Ek = Mean_anomaly + navData[satlist->PRN_list[index]].Eccentricity * sin(E0);
                 err_Ek = Ek - E0;
-                //printf("Err = %.19lf\n",err_Ek);
                 E0 = Ek;
             }
             relativistic_correction = F * navData[satlist->PRN_list[index]].Eccentricity * navData[satlist->PRN_list[index]].Sqrt_a * sin(Ek);
@@ -81,7 +84,6 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
         x_in_orb = corrected_radi * cos(corrected_lat);
         y_in_orb = corrected_radi * sin(corrected_lat);
         corrected_ascending_node = navData[satlist->PRN_list[index]].OMEGA + (navData[satlist->PRN_list[index]].Omega_dot - Omeg_dot_earth) * tk - Omeg_dot_earth * navData[satlist->PRN_list[index]].TOE;
-
         X_s[index] = x_in_orb * cos(corrected_ascending_node) - y_in_orb * cos(corrected_inclin) * sin(corrected_ascending_node);
         Y_s[index] = x_in_orb * sin(corrected_ascending_node) + y_in_orb * cos(corrected_inclin) * cos(corrected_ascending_node);
         Z_s[index] = y_in_orb * sin(corrected_inclin);
@@ -110,17 +112,13 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
         index++;
         iono (zij, TECU, &d_iono);
         iono_delay[index] = d_iono;
-        printf("%lf\n",d_iono);
+        trop (zij, height, &d_trop);
+        trop_delay[index] = d_trop;
+        printf("d_t %lf\n", d_trop);
     }
-    //Trop delay
-
-    //Iono delay
 
     //Approximate distance
 
-    
-   
- 
     return 0;
 }
 
@@ -185,4 +183,10 @@ void iono (double Zenith, double TECU, double *d_iono) {
     double OF = 1.0 - pow((Re * sin(Zenith) / (Re + hi)), 2);
     OF = 1.0 / sqrt(OF);
     *d_iono = (40.3 / pow(f, 2)) * TEC * OF;
+}
+
+void trop (double Zenth, double height, double *d_trop) {
+    double water_vapor_pressure = 6.108 * RH * exp((17.15 * T - 4684) / (T - 38.45));
+    *d_trop = (0.002277 / cos(Zenth)) * (P + (1255 / T + 0.05) * water_vapor_pressure -pow(tan(Zenth),2));
+
 }

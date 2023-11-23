@@ -6,6 +6,10 @@
 #define f          1575.42e6
 #define hi         350000
 
+#define P          1013.0      // [mBar,hPa] 
+#define T          273.15      // [Kelvin]
+#define RH         0.5
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
