@@ -10,7 +10,6 @@ void trop (double Zenth, double height, double *d_trop);
 void position_correction (double *trop_delay, double *iono_delay, double *pseudorange, double *GPS_clk_correction, double X_r, double Y_r, double Z_r, double *X_s, double *Y_s, double *Z_s);
 
 
-
 int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *obsHead, struct ObsSat *satlist) {
     //double F = -4.442807633 * pow(10,-10);
     int timediff = 3600; //need to use parsing time!
@@ -191,23 +190,34 @@ void trop (double Zenth, double height, double *d_trop) {
 void position_correction (double *trop_delay, double *iono_delay, double *pseudorange, double *GPS_clk_correction, double X_r, double Y_r, double Z_r, double *X_s, double *Y_s, double *Z_s) {    
     double xa, ya, za;
     int num = sizeof(&pseudorange) / sizeof(pseudorange[0]);
-    double transmit_time[num], distance_tx_rx[num], L[num], ax[num], ay[num], az[num], A[3][num];
+    double transmit_time[num], distance_tx_rx[num], L[num], ax[num], ay[num], az[num], A[num][4];
     for (int index = 0; index < num; ++num) {
         transmit_time[index] = pseudorange[index] / c;
         distance_tx_rx[index] = sqrt(pow((X_s[index] - X_r + Y_r * Omeg_dot_earth * transmit_time[index]),2) + pow((Y_s[index] - Y_r + X_r * Omeg_dot_earth * transmit_time[index]),2) + pow((Z_s[index] - Z_r),2));
         L[index] = pseudorange[index] - distance_tx_rx[index] + GPS_clk_correction[index] * c - iono_delay[index] - trop_delay[index];
-        A[0][index] =  -(X_s[index] - X_r) / distance_tx_rx[index];
-        A[1][index] =  -(Y_s[index] - Y_r) / distance_tx_rx[index];
-        A[2][index] =  -(Z_s[index] - Z_r) / distance_tx_rx[index];
+        A[index][0] =  -(X_s[index] - X_r) / distance_tx_rx[index];
+        A[index][1] =  -(Y_s[index] - Y_r) / distance_tx_rx[index];
+        A[index][2] =  -(Z_s[index] - Z_r) / distance_tx_rx[index];
+        A[index][3] = 1.;
     }
     
-    double transpose_A[num][3];
+    double transpose_A[num][4];
     // computing the transpose of A
-    for (int row = 0; row < 3; ++row) {
+    for (int row = 0; row < 4; ++row) {
         for (int column = 0; column < num; ++column) {
             transpose_A[column][row] = A[row][column];
         }
     }
-    //double Q_x = inv(A)
+    //Multiplication
+    double ATA[4][4];
+    for (int col = 0; col < 4; ++col) {
+        for (int row= 0; row < 4; ++row) {
+            for (int element =0; element < num; element++) {
+                ATA[row][col] += transpose_A[col][num] * A[num][col];
+            }
+        } 
+    }
+    //inverse of ATA
+    
 
 }
