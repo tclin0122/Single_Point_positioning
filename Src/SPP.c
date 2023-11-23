@@ -7,16 +7,12 @@ void Cart2Ecip (double X, double Y, double Z, double *lat, double *lon, double *
 void relative_position (double X, double X_a, double Y, double Y_a, double Z, double Z_a, double lat, double lon, double *zij);
 void iono (double Zenth, double TECU, double *d_iono);
 void trop (double Zenth, double height, double *d_trop);
+void position_correction (double *trop_delay, double *iono_delay, double *pseudorange, double *GPS_clk_correction, double X_r, double Y_r, double Z_r, double *X_s, double *Y_s, double *Z_s);
 
 
 
 int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *obsHead, struct ObsSat *satlist) {
-    //constant from GPS ICD
-    double c = 299792458; //speed of light
-    double pi = 3.1415926535898; //Pi
-    double mu = 3.986005 * pow(10,14);
-    double Omeg_dot_earth = 7.2921151467 * pow(10,-5);
-    double F = -4.442807633 * pow(10,-10);
+    //double F = -4.442807633 * pow(10,-10);
     int timediff = 3600; //need to use parsing time!
     int index = 0;//satlist->GPS_num;
     double err_rel;
@@ -24,12 +20,12 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
     double err_tol = pow(10,-20);
 
     double signal_propagation_time, nominal_transmission_time, GPS_Sat_time_diff, relativistic_correction;
-    double GPS_clk_correction, system_transmission_time, A, mean_motion, corrected_mean_motion, tk;
+    double GPS_clk_correction[satlist->GPS_num], sat_clk_correction, system_transmission_time, A, mean_motion, corrected_mean_motion, tk;
     double Mean_anomaly, E0, Ek, a, b, vk, lat_k, lat_correction, radi_correction, inclin_correction;
     double corrected_lat, corrected_radi, corrected_inclin, x_in_orb, y_in_orb, corrected_ascending_node;
     double X_s[satlist->GPS_num], Y_s[satlist->GPS_num], Z_s[satlist->GPS_num];
 
-    double lat, lon, height, zij, d_iono, d_trop;
+    double lat, lon, height, zij, d_iono, d_trop, pseudorange[satlist->GPS_num];
     double Zenith[satlist->GPS_num];
     double iono_delay[satlist->GPS_num];
     double trop_delay[satlist->GPS_num];
@@ -39,7 +35,8 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
     //Start the loop
     while (index < satlist->GPS_num) {
         //Compute signal propagation time
-        signal_propagation_time = obsData[index].P1 / c;
+        pseudorange[index] = obsData[index].P1;
+        signal_propagation_time = pseudorange[index] / c;
         //Compute signal transmission time
         nominal_transmission_time = navData[satlist->PRN_list[index]].TOE - signal_propagation_time - timediff;
         //Compute satellite clock correction
@@ -51,9 +48,9 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
             GPS_Sat_time_diff = navData[satlist->PRN_list[index]].clockBias + navData[satlist->PRN_list[index]].clockDrift 
                             * (nominal_transmission_time - navData[satlist->PRN_list[index]].TOE) + navData[satlist->PRN_list[index]].clockDriftRate
                             * pow((nominal_transmission_time - navData[satlist->PRN_list[index]].TOE),2) + relativistic_correction;
-            GPS_clk_correction = GPS_Sat_time_diff - navData[satlist->PRN_list[index]].TGD;
+            sat_clk_correction = GPS_Sat_time_diff - navData[satlist->PRN_list[index]].TGD;
             //Compute system transmission time
-            system_transmission_time = nominal_transmission_time - GPS_clk_correction;
+            system_transmission_time = nominal_transmission_time - sat_clk_correction;
             //Compute eccentric anomaly
             A = pow(navData[satlist->PRN_list[index]].Sqrt_a,2);
             mean_motion = sqrt(mu/pow(A,3));
@@ -70,6 +67,7 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
             relativistic_correction = F * navData[satlist->PRN_list[index]].Eccentricity * navData[satlist->PRN_list[index]].Sqrt_a * sin(Ek);
             err_rel -= relativistic_correction;
         }
+        GPS_clk_correction[index] = sat_clk_correction;
         //Compute satellite coordinates Xs, Ys, Zs
         a = (sqrt(1.0 - pow(navData[satlist->PRN_list[index]].Eccentricity,2)) * sin(Ek)) / (1.0 - navData[satlist->PRN_list[index]].Eccentricity * cos(Ek));
         b = (cos(Ek) - navData[satlist->PRN_list[index]].Eccentricity) / (1.0 - navData[satlist->PRN_list[index]].Eccentricity * cos(Ek));
@@ -103,7 +101,7 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
     }
     */
     //Carte2Ellip
-    Cart2Ecip(obsHead->approxPosX,obsHead->approxPosY,obsHead->approxPosZ,&lat, &lon, &height);
+    Cart2Ecip(obsHead->approxPosX, obsHead->approxPosY, obsHead->approxPosZ, &lat, &lon, &height);
     //Get Zenith angle and do Trop and Iono
     index = 0;
     while (index < satlist->GPS_num) {
@@ -114,7 +112,7 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
         iono_delay[index] = d_iono;
         trop (zij, height, &d_trop);
         trop_delay[index] = d_trop;
-        printf("d_t %lf\n", d_trop);
+        //printf("d_t %lf\n", d_trop);
     }
 
     //Approximate distance
@@ -184,9 +182,32 @@ void iono (double Zenith, double TECU, double *d_iono) {
     OF = 1.0 / sqrt(OF);
     *d_iono = (40.3 / pow(f, 2)) * TEC * OF;
 }
-
+//see if need to change to correction model
 void trop (double Zenth, double height, double *d_trop) {
     double water_vapor_pressure = 6.108 * RH * exp((17.15 * T - 4684) / (T - 38.45));
     *d_trop = (0.002277 / cos(Zenth)) * (P + (1255 / T + 0.05) * water_vapor_pressure -pow(tan(Zenth),2));
+}
+
+void position_correction (double *trop_delay, double *iono_delay, double *pseudorange, double *GPS_clk_correction, double X_r, double Y_r, double Z_r, double *X_s, double *Y_s, double *Z_s) {    
+    double xa, ya, za;
+    int num = sizeof(&pseudorange) / sizeof(pseudorange[0]);
+    double transmit_time[num], distance_tx_rx[num], L[num], ax[num], ay[num], az[num], A[3][num];
+    for (int index = 0; index < num; ++num) {
+        transmit_time[index] = pseudorange[index] / c;
+        distance_tx_rx[index] = sqrt(pow((X_s[index] - X_r + Y_r * Omeg_dot_earth * transmit_time[index]),2) + pow((Y_s[index] - Y_r + X_r * Omeg_dot_earth * transmit_time[index]),2) + pow((Z_s[index] - Z_r),2));
+        L[index] = pseudorange[index] - distance_tx_rx[index] + GPS_clk_correction[index] * c - iono_delay[index] - trop_delay[index];
+        A[0][index] =  -(X_s[index] - X_r) / distance_tx_rx[index];
+        A[1][index] =  -(Y_s[index] - Y_r) / distance_tx_rx[index];
+        A[2][index] =  -(Z_s[index] - Z_r) / distance_tx_rx[index];
+    }
+    
+    double transpose_A[num][3];
+    // computing the transpose of A
+    for (int row = 0; row < 3; ++row) {
+        for (int column = 0; column < num; ++column) {
+            transpose_A[column][row] = A[row][column];
+        }
+    }
+    //double Q_x = inv(A)
 
 }
