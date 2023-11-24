@@ -37,7 +37,7 @@ int main() {
     //Use RINEX file to do SPP
     err = spp(navData, obsData, obsHead, satlist);
     if (err != 0) {
-        printf("Obs data read error");
+        printf("SPP error");
         return 1;
     }
 
