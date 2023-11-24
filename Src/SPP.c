@@ -227,10 +227,10 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
             A[index][3] = 1.;
         }
 
-        double transpose_A[num][4];
+        double transpose_A[4][num];
         // computing the transpose of A
-        for (int row = 0; row < 4; ++row) {
-            for (int column = 0; column < num; ++column) {
+        for (int row = 0; row < num; ++row) {
+            for (int column = 0; column < 4; ++column) {
                 transpose_A[column][row] = A[row][column];
             }
         }
@@ -294,7 +294,9 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
                         - ATA[0][2]*ATA[1][1]*ATA[2][0] - ATA[0][1]*ATA[1][0]*ATA[2][2] - ATA[0][0]*ATA[1][2]*ATA[2][1]) / det_A;
         }
 
-        //Multiplication
+        //Multiplication <- To do  bug
+        // double transpose_A[4][num];
+        // X_vector bug
         double X_vector[4],M[4][num];
         for (int row = 0; row < 4; ++row) {
             for (int col= 0; col < num; ++col) {
@@ -323,15 +325,22 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
         }
         //print ATA
         printf("Qx\n");
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < num; ++i) {
             for (int j = 0; j < 4; ++j) {
-                printf("%lf\t", Qx[i][j]);
+                printf("%lf\t", A[i][j]);
+            }
+            printf("\n");
+         }
+        printf("\n");
+        for (int i = 0; i < 4; ++i) {
+            for (int j = 0; j < num; ++j) {
+                printf("%lf\t", transpose_A[i][j]);
             }
             printf("\n");
          }
         //
         for (int index = 0; index < 4; ++index) {
-            printf("V = %lf\n",X_vector[index]);
+            printf("X = %lf\n",X_vector[index]);
         }
         //
         //Multiplication
