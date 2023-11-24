@@ -7,24 +7,16 @@ void Cart2Ecip (double X, double Y, double Z, double *lat, double *lon, double *
 void relative_position (double X, double X_a, double Y, double Y_a, double Z, double Z_a, double lat, double lon, double *zij);
 void iono (double Zenth, double TECU, double *d_iono);
 void trop (double Zenth, double height, double *d_trop);
-static int position_correction (double trop_delay[], double iono_delay[], double pseudorange[], double GPS_clk_correction[], double X_r, double Y_r, double Z_r, double X_s[], double Y_s[], double Z_s[], double *RX_x, double *RX_y, double *RX_z);
+int position_correction (double trop_delay[], double iono_delay[], double pseudorange[], double GPS_clk_correction[], double X_r, double Y_r, double Z_r, double X_s[], double Y_s[], double Z_s[], double *RX_x, double *RX_y, double *RX_z);
 
 
 int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *obsHead, struct ObsSat *satlist) {
-    //double F = -4.442807633 * pow(10,-10);
-    int timediff = 3600; //need to use parsing time!
-    int index = 0;//satlist->GPS_num;
-    double err_rel;
-    double err_Ek = 1.;
-    double err_tol = pow(10,-20);
-
-    double signal_propagation_time, nominal_transmission_time, GPS_Sat_time_diff, relativistic_correction;
-    double GPS_clk_correction[satlist->GPS_num], sat_clk_correction, system_transmission_time, A, mean_motion, corrected_mean_motion, tk;
-    double Mean_anomaly, E0, Ek, a, b, vk, lat_k, lat_correction, radi_correction, inclin_correction;
-    double corrected_lat, corrected_radi, corrected_inclin, x_in_orb, y_in_orb, corrected_ascending_node;
+    int index = 0;
+    double GPS_clk_correction[satlist->GPS_num];
     double X_s[satlist->GPS_num], Y_s[satlist->GPS_num], Z_s[satlist->GPS_num];
 
-    double lat, lon, height, zij, d_iono, d_trop, pseudorange[satlist->GPS_num];
+    double lat, lon, height, zij, d_iono, d_trop;
+    double pseudorange[satlist->GPS_num];
     double Zenith[satlist->GPS_num];
     double iono_delay[satlist->GPS_num];
     double trop_delay[satlist->GPS_num];
@@ -36,9 +28,19 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
 
     //Start the loop
     while (index < satlist->GPS_num) {
+        int timediff = 3600; //need to use parsing time!
+        double err_tol = pow(10,-20);
+        double err_Ek = 1.;
+        double err_rel;
+        double signal_propagation_time, nominal_transmission_time, GPS_Sat_time_diff, relativistic_correction;
+        double sat_clk_correction, system_transmission_time, A, mean_motion, corrected_mean_motion, tk;
+        double Mean_anomaly, E0, Ek, a, b, vk, lat_k, lat_correction, radi_correction, inclin_correction;
+        double corrected_lat, corrected_radi, corrected_inclin, x_in_orb, y_in_orb, corrected_ascending_node;
         //Compute signal propagation time
         pseudorange[index] = obsData[index].P1;
         signal_propagation_time = pseudorange[index] / c;
+        int num = sizeof(pseudorange) / sizeof(double);
+         printf("num %d\n",num);
         //Compute signal transmission time
         nominal_transmission_time = navData[satlist->PRN_list[index]].TOE - signal_propagation_time - timediff;
         //Compute satellite clock correction
@@ -91,6 +93,7 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
         index++;
     }
     index = 0;
+    /*
     // show the satellite coord.
     while (index < satlist->GPS_num) {
         printf("PRN = %d\n", navData[satlist->PRN_list[index]].PRN);
@@ -100,6 +103,7 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
         //update the index
         index++;
     }
+    */
     //Carte2Ellip
     Cart2Ecip(obsHead->approxPosX, obsHead->approxPosY, obsHead->approxPosZ, &lat, &lon, &height);
     //Get Zenith angle and do Trop and Iono
@@ -120,7 +124,8 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
     printf("Start position correction\n");
     err_flag = position_correction (trop_delay, iono_delay, pseudorange, GPS_clk_correction, obsHead->approxPosX, obsHead->approxPosY, obsHead->approxPosZ, X_s, Y_s, Z_s, &RX_x, &RX_y, &RX_z);
     if (err_flag != 0) {
-        printf("failed SPP");
+        printf("failed SPP\n");
+        return 1;
     }
     printf("RX_X %lf\n", RX_x);
     printf("RX_Y %lf\n", RX_y);
@@ -199,22 +204,26 @@ void trop (double Zenth, double height, double *d_trop) {
     *d_trop = (0.002277 / cos(Zenth)) * (P + (1255 / T + 0.05) * water_vapor_pressure -pow(tan(Zenth),2));
 }
 
-static int position_correction (double trop_delay[], double iono_delay[], double pseudorange[], double GPS_clk_correction[], double X_r, double Y_r, double Z_r, double X_s[], double Y_s[], double Z_s[], double *RX_x, double *RX_y, double *RX_z) {    
-    double xa, ya, za;
-    int num = sizeof(&pseudorange) / sizeof(pseudorange[0]);
+int position_correction (double trop_delay[], double iono_delay[], double pseudorange[], double GPS_clk_correction[], double X_r, double Y_r, double Z_r, double X_s[], double Y_s[], double Z_s[], double *RX_x, double *RX_y, double *RX_z) {    
+    double xa = 0., ya = 0., za = 0.;
+    int num = 12;
+    
+    printf("num %d\n",num);
     double transmit_time[num], distance_tx_rx[num], L[num], ax[num], ay[num], az[num], A[num][4];
+    double ATA[4][4] = {0};
     xa = X_r; ya = Y_r; za = Z_r;
-    double V_err = 0.1;
-    double V_err_0 = 0.;
-    double Err = V_err - V_err_0;
-    while ( Err > ERR_TOLLERANCE) {
-        for (int index = 0; index < num; ++num) {
+    double V_err = 0;
+    double V_err_0 = 1;
+    double Err;
+    Err = V_err - V_err_0;
+    while ( fabs(Err) > ERR_TOLLERANCE) {
+        for (int index = 0; index < num; ++index) {
             transmit_time[index] = pseudorange[index] / c;
             distance_tx_rx[index] = sqrt(pow((X_s[index] - xa + ya * Omeg_dot_earth * transmit_time[index]),2) + pow((Y_s[index] - ya + xa * Omeg_dot_earth * transmit_time[index]),2) + pow((Z_s[index] - za),2));
             L[index] = pseudorange[index] - distance_tx_rx[index] + GPS_clk_correction[index] * c - iono_delay[index] - trop_delay[index];
-            A[index][0] =  -(X_s[index] - X_r) / distance_tx_rx[index];
-            A[index][1] =  -(Y_s[index] - Y_r) / distance_tx_rx[index];
-            A[index][2] =  -(Z_s[index] - Z_r) / distance_tx_rx[index];
+            A[index][0] =  -(X_s[index] - xa) / distance_tx_rx[index];
+            A[index][1] =  -(Y_s[index] - ya) / distance_tx_rx[index];
+            A[index][2] =  -(Z_s[index] - za) / distance_tx_rx[index];
             A[index][3] = 1.;
         }
 
@@ -226,7 +235,6 @@ static int position_correction (double trop_delay[], double iono_delay[], double
             }
         }
         //Multiplication
-        double ATA[4][4];
         for (int row = 0; row < 4; ++row) {
             for (int col= 0; col < 4; ++col) {
                 for (int element = 0; element < num; ++element) {
@@ -246,11 +254,12 @@ static int position_correction (double trop_delay[], double iono_delay[], double
                 - ATA[0][1]*ATA[1][2]*ATA[2][3]*ATA[3][0] - ATA[0][2]*ATA[1][3]*ATA[2][1]*ATA[3][0] - ATA[0][3]*ATA[1][1]*ATA[2][2]*ATA[3][0]
                 + ATA[0][3]*ATA[1][2]*ATA[2][1]*ATA[3][0] + ATA[0][2]*ATA[1][1]*ATA[2][3]*ATA[3][0] + ATA[0][1]*ATA[1][3]*ATA[2][2]*ATA[3][0];
         if (det_A == 0) {
-            printf("inverse does not exit");
+            printf("matrix is singular\n");
+            printf("print det_A %lf\n", det_A);
             return 1;
         }
         else {
-            printf("det = %lf",det_A);
+            printf("det = %lf\n",det_A);
             Qx[0][0] = (ATA[1][1]*ATA[2][2]*ATA[3][3] + ATA[1][2]*ATA[2][3]*ATA[3][1] + ATA[1][3]*ATA[2][1]*ATA[3][2]
                         - ATA[1][3]*ATA[2][2]*ATA[3][1] - ATA[1][2]*ATA[2][1]*ATA[3][3] - ATA[1][1]*ATA[2][3]*ATA[3][2]) / det_A;
             Qx[0][1] = ( - ATA[0][1]*ATA[2][2]*ATA[3][3] - ATA[0][2]*ATA[2][3]*ATA[3][1] - ATA[0][3]*ATA[2][1]*ATA[3][2]
@@ -312,13 +321,28 @@ static int position_correction (double trop_delay[], double iono_delay[], double
             }
             V[row] -= L[row];
         }
+        //print ATA
+        printf("Qx\n");
+        for (int i = 0; i < 4; ++i) {
+            for (int j = 0; j < 4; ++j) {
+                printf("%lf\t", Qx[i][j]);
+            }
+            printf("\n");
+         }
+        //
+        for (int index = 0; index < 4; ++index) {
+            printf("V = %lf\n",X_vector[index]);
+        }
+        //
         //Multiplication
         for (int index = 0; index < num; ++index) {
             V_err += V[index] * V[index];
         }
+        printf("V_err = %lf\n",V_err);
         //update tolerance
         Err = V_err - V_err_0;
         V_err_0 = V_err;
+        printf("ERR = %lf\n", fabs(Err));
     }
     *RX_x = xa;
     *RX_y = ya;

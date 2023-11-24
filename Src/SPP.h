@@ -25,7 +25,14 @@
 #include "Rinex2Obs.h"
 #include "Rinex2Nav.h"
 
+void Cart2Ecip (double X, double Y, double Z, double *lat, double *lon, double *height);
+void relative_position (double X, double X_a, double Y, double Y_a, double Z, double Z_a, double lat, double lon, double *zij);
+void iono (double Zenth, double TECU, double *d_iono);
+void trop (double Zenth, double height, double *d_trop);
+int position_correction (double trop_delay[], double iono_delay[], double pseudorange[], double GPS_clk_correction[], double X_r, double Y_r, double Z_r, double X_s[], double Y_s[], double Z_s[], double *RX_x, double *RX_y, double *RX_z);
+
 
 int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *obsHead, struct ObsSat *satlist);
+
 
 #endif /* SPP_H_ */

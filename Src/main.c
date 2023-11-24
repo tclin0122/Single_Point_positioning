@@ -23,21 +23,21 @@ int main() {
     //Read Navigation
     err = rinex2nav(NavPath, navData);
     if (err != 0) {
-        printf("Nav data read error");
+        printf("Nav data read error\n");
         return 1;
     }
 
     //Read Observation
     err = rinex2obs(ObsPath, obsData, obsHead, satlist);
     if (err != 0) {
-        printf("Obs data read error");
+        printf("Obs data read error\n");
         return 1;
     }
 
     //Use RINEX file to do SPP
     err = spp(navData, obsData, obsHead, satlist);
     if (err != 0) {
-        printf("SPP error");
+        printf("SPP error\n");
         return 1;
     }
 
