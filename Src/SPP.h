@@ -17,6 +17,8 @@
 #define Omeg_dot_earth 7.2921151467 * pow(10,-5)
 #define F              -4.442807633 * pow(10,-10)
 
+#define ERR_TOLLERANCE 1e-5
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

@@ -7,7 +7,7 @@ void Cart2Ecip (double X, double Y, double Z, double *lat, double *lon, double *
 void relative_position (double X, double X_a, double Y, double Y_a, double Z, double Z_a, double lat, double lon, double *zij);
 void iono (double Zenth, double TECU, double *d_iono);
 void trop (double Zenth, double height, double *d_trop);
-void position_correction (double *trop_delay, double *iono_delay, double *pseudorange, double *GPS_clk_correction, double X_r, double Y_r, double Z_r, double *X_s, double *Y_s, double *Z_s);
+void position_correction (double *trop_delay, double *iono_delay, double *pseudorange, double *GPS_clk_correction, double X_r, double Y_r, double Z_r, double *X_s, double *Y_s, double *Z_s, double *RX_x, double *RX_y, double *RX_z);
 
 
 int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *obsHead, struct ObsSat *satlist) {
@@ -29,6 +29,8 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
     double iono_delay[satlist->GPS_num];
     double trop_delay[satlist->GPS_num];
     double TECU = 5.3;
+
+    double RX_x, RX_y, RX_z;
     printf("Start Single Point Positioning\n");
 
     //Start the loop
@@ -113,8 +115,13 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
         trop_delay[index] = d_trop;
         //printf("d_t %lf\n", d_trop);
     }
-
     //Approximate distance
+    //void position_correction (double *trop_delay, double *iono_delay, double *pseudorange, double *GPS_clk_correction, double X_r, double Y_r, double Z_r, double *X_s, double *Y_s, double *Z_s, double *RX_x, double *RX_y, double *RX_z);
+
+    position_correction (&trop_delay, &iono_delay, &pseudorange, &GPS_clk_correction, obsHead->approxPosX, obsHead->approxPosY, obsHead->approxPosZ, &X_s, &Y_s, &Z_s, &RX_x, &RX_y, &RX_z);
+    printf("RX_X %lf\n", RX_x);
+    printf("RX_Y %lf\n", RX_y);
+    printf("RX_Z %lf\n", RX_z);
 
     return 0;
 }
@@ -187,37 +194,126 @@ void trop (double Zenth, double height, double *d_trop) {
     *d_trop = (0.002277 / cos(Zenth)) * (P + (1255 / T + 0.05) * water_vapor_pressure -pow(tan(Zenth),2));
 }
 
-void position_correction (double *trop_delay, double *iono_delay, double *pseudorange, double *GPS_clk_correction, double X_r, double Y_r, double Z_r, double *X_s, double *Y_s, double *Z_s) {    
+void position_correction (double *trop_delay, double *iono_delay, double *pseudorange, double *GPS_clk_correction, double X_r, double Y_r, double Z_r, double *X_s, double *Y_s, double *Z_s, double *RX_x, double *RX_y, double *RX_z) {    
     double xa, ya, za;
     int num = sizeof(&pseudorange) / sizeof(pseudorange[0]);
     double transmit_time[num], distance_tx_rx[num], L[num], ax[num], ay[num], az[num], A[num][4];
-    for (int index = 0; index < num; ++num) {
-        transmit_time[index] = pseudorange[index] / c;
-        distance_tx_rx[index] = sqrt(pow((X_s[index] - X_r + Y_r * Omeg_dot_earth * transmit_time[index]),2) + pow((Y_s[index] - Y_r + X_r * Omeg_dot_earth * transmit_time[index]),2) + pow((Z_s[index] - Z_r),2));
-        L[index] = pseudorange[index] - distance_tx_rx[index] + GPS_clk_correction[index] * c - iono_delay[index] - trop_delay[index];
-        A[index][0] =  -(X_s[index] - X_r) / distance_tx_rx[index];
-        A[index][1] =  -(Y_s[index] - Y_r) / distance_tx_rx[index];
-        A[index][2] =  -(Z_s[index] - Z_r) / distance_tx_rx[index];
-        A[index][3] = 1.;
-    }
-    
-    double transpose_A[num][4];
-    // computing the transpose of A
-    for (int row = 0; row < 4; ++row) {
-        for (int column = 0; column < num; ++column) {
-            transpose_A[column][row] = A[row][column];
+    xa = X_r; ya = Y_r; za = Z_r;
+    double V_err = 0.1;
+    double Err = V_err;
+    while ( Err > ERR_TOLLERANCE) {
+        for (int index = 0; index < num; ++num) {
+            transmit_time[index] = pseudorange[index] / c;
+            distance_tx_rx[index] = sqrt(pow((X_s[index] - xa + ya * Omeg_dot_earth * transmit_time[index]),2) + pow((Y_s[index] - ya + xa * Omeg_dot_earth * transmit_time[index]),2) + pow((Z_s[index] - za),2));
+            L[index] = pseudorange[index] - distance_tx_rx[index] + GPS_clk_correction[index] * c - iono_delay[index] - trop_delay[index];
+            A[index][0] =  -(X_s[index] - X_r) / distance_tx_rx[index];
+            A[index][1] =  -(Y_s[index] - Y_r) / distance_tx_rx[index];
+            A[index][2] =  -(Z_s[index] - Z_r) / distance_tx_rx[index];
+            A[index][3] = 1.;
         }
-    }
-    //Multiplication
-    double ATA[4][4];
-    for (int col = 0; col < 4; ++col) {
-        for (int row= 0; row < 4; ++row) {
-            for (int element =0; element < num; element++) {
-                ATA[row][col] += transpose_A[col][num] * A[num][col];
-            }
-        } 
-    }
-    //inverse of ATA
-    
 
+        double transpose_A[num][4];
+        // computing the transpose of A
+        for (int row = 0; row < 4; ++row) {
+            for (int column = 0; column < num; ++column) {
+                transpose_A[column][row] = A[row][column];
+            }
+        }
+        //Multiplication
+        double ATA[4][4];
+        for (int row = 0; row < 4; ++row) {
+            for (int col= 0; col < 4; ++col) {
+                for (int element = 0; element < num; ++element) {
+                    ATA[row][col] += transpose_A[row][element] * A[element][col];
+                }
+            } 
+        }
+        //inverse of ATA
+        double det_A = 0;
+        double Qx[4][4];
+        det_A = ATA[0][0]*ATA[1][1]*ATA[2][2]*ATA[3][3] + ATA[0][0]*ATA[1][2]*ATA[2][3]*ATA[3][1] + ATA[0][0]*ATA[1][3]*ATA[2][1]*ATA[3][2]
+                - ATA[0][0]*ATA[1][3]*ATA[2][2]*ATA[3][1] - ATA[0][0]*ATA[1][2]*ATA[2][1]*ATA[3][3] - ATA[0][0]*ATA[1][1]*ATA[2][3]*ATA[3][2]
+                - ATA[0][1]*ATA[1][0]*ATA[2][2]*ATA[3][3] - ATA[0][2]*ATA[1][0]*ATA[2][3]*ATA[3][1] - ATA[0][3]*ATA[1][0]*ATA[2][1]*ATA[3][2]
+                + ATA[0][3]*ATA[1][0]*ATA[2][2]*ATA[3][1] + ATA[0][2]*ATA[1][0]*ATA[2][1]*ATA[3][3] + ATA[0][1]*ATA[1][0]*ATA[2][3]*ATA[3][2]
+                + ATA[0][1]*ATA[1][2]*ATA[2][0]*ATA[3][3] + ATA[0][2]*ATA[1][3]*ATA[2][0]*ATA[3][1] + ATA[0][3]*ATA[1][1]*ATA[2][0]*ATA[3][2]
+                - ATA[0][3]*ATA[1][2]*ATA[2][0]*ATA[3][1] - ATA[0][2]*ATA[1][1]*ATA[2][0]*ATA[3][3] - ATA[0][1]*ATA[1][3]*ATA[2][0]*ATA[3][2]
+                - ATA[0][1]*ATA[1][2]*ATA[2][3]*ATA[3][0] - ATA[0][2]*ATA[1][3]*ATA[2][1]*ATA[3][0] - ATA[0][3]*ATA[1][1]*ATA[2][2]*ATA[3][0]
+                + ATA[0][3]*ATA[1][2]*ATA[2][1]*ATA[3][0] + ATA[0][2]*ATA[1][1]*ATA[2][3]*ATA[3][0] + ATA[0][1]*ATA[1][3]*ATA[2][2]*ATA[3][0];
+        if (det_A == 0) {
+            printf("inverse does not exit");
+            //return 1;
+        }
+        else {
+            printf("det = %lf",det_A);
+            Qx[0][0] = (ATA[1][1]*ATA[2][2]*ATA[3][3] + ATA[1][2]*ATA[2][3]*ATA[3][1] + ATA[1][3]*ATA[2][1]*ATA[3][2]
+                        - ATA[1][3]*ATA[2][2]*ATA[3][1] - ATA[1][2]*ATA[2][1]*ATA[3][3] - ATA[1][1]*ATA[2][3]*ATA[3][2]) / det_A;
+            Qx[0][1] = ( - ATA[0][1]*ATA[2][2]*ATA[3][3] - ATA[0][2]*ATA[2][3]*ATA[3][1] - ATA[0][3]*ATA[2][1]*ATA[3][2]
+                        + ATA[0][3]*ATA[2][2]*ATA[3][1] + ATA[0][2]*ATA[2][1]*ATA[3][3] + ATA[0][1]*ATA[2][3]*ATA[3][2]) / det_A;
+            Qx[0][2] = (ATA[0][1]*ATA[1][2]*ATA[3][3] + ATA[0][2]*ATA[1][3]*ATA[3][1] + ATA[0][3]*ATA[1][1]*ATA[3][2]
+                        - ATA[0][3]*ATA[1][2]*ATA[3][1] - ATA[0][2]*ATA[1][1]*ATA[3][3] - ATA[0][1]*ATA[1][3]*ATA[3][2]) / det_A;    
+            Qx[0][3] = ( - ATA[0][1]*ATA[1][2]*ATA[2][3] - ATA[0][2]*ATA[1][3]*ATA[2][1] - ATA[0][3]*ATA[1][1]*ATA[2][2]
+                        + ATA[0][3]*ATA[1][2]*ATA[2][1] + ATA[0][2]*ATA[1][1]*ATA[2][3] + ATA[0][1]*ATA[1][3]*ATA[2][2]) / det_A;
+            Qx[1][0] = ( - ATA[1][0]*ATA[2][2]*ATA[3][3] - ATA[1][2]*ATA[2][3]*ATA[3][0] - ATA[1][3]*ATA[2][0]*ATA[3][2]
+                        + ATA[1][3]*ATA[2][2]*ATA[3][0] + ATA[1][2]*ATA[2][0]*ATA[3][3] + ATA[1][0]*ATA[2][3]*ATA[3][2]) / det_A;
+            Qx[1][1] = (ATA[0][0]*ATA[2][2]*ATA[3][3] + ATA[0][2]*ATA[2][3]*ATA[3][0] + ATA[0][3]*ATA[2][0]*ATA[3][2]
+                        - ATA[0][3]*ATA[2][2]*ATA[3][0] - ATA[0][2]*ATA[2][0]*ATA[3][3] - ATA[0][0]*ATA[2][3]*ATA[3][2]) / det_A;
+            Qx[1][2] = ( - ATA[0][0]*ATA[1][2]*ATA[3][3] - ATA[0][2]*ATA[1][3]*ATA[3][0] - ATA[0][3]*ATA[1][0]*ATA[3][2]
+                        + ATA[0][3]*ATA[1][2]*ATA[3][0] + ATA[0][2]*ATA[1][0]*ATA[3][3] + ATA[0][0]*ATA[1][3]*ATA[3][2]) / det_A;       
+            Qx[1][3] = (ATA[0][0]*ATA[1][2]*ATA[2][3] + ATA[0][2]*ATA[1][3]*ATA[2][0] + ATA[0][3]*ATA[1][0]*ATA[2][2]
+                        - ATA[0][3]*ATA[1][2]*ATA[2][0] - ATA[0][2]*ATA[1][0]*ATA[2][3] - ATA[0][0]*ATA[1][3]*ATA[2][2]) / det_A;
+            Qx[2][0] = (ATA[1][0]*ATA[2][1]*ATA[3][3] + ATA[1][1]*ATA[2][3]*ATA[3][0] + ATA[1][3]*ATA[2][0]*ATA[3][2]
+                        - ATA[1][3]*ATA[2][1]*ATA[3][0] - ATA[1][1]*ATA[2][0]*ATA[3][3] - ATA[1][0]*ATA[2][3]*ATA[3][1]) / det_A;
+            Qx[2][1] = ( - ATA[0][0]*ATA[2][1]*ATA[3][3] - ATA[0][1]*ATA[2][3]*ATA[3][0] - ATA[0][3]*ATA[2][0]*ATA[3][1]
+                        + ATA[0][3]*ATA[2][1]*ATA[3][0] + ATA[0][1]*ATA[2][0]*ATA[3][3] + ATA[0][0]*ATA[2][3]*ATA[3][1]) / det_A;
+            Qx[2][2] = (ATA[0][0]*ATA[1][1]*ATA[3][3] + ATA[0][1]*ATA[1][3]*ATA[3][0] + ATA[0][3]*ATA[1][0]*ATA[3][1]
+                        - ATA[0][3]*ATA[1][1]*ATA[3][0] - ATA[0][1]*ATA[1][0]*ATA[3][3] - ATA[0][0]*ATA[1][3]*ATA[3][1]) / det_A;     
+            Qx[2][3] = ( - ATA[0][0]*ATA[1][1]*ATA[2][3] - ATA[0][1]*ATA[1][3]*ATA[2][0] - ATA[0][3]*ATA[1][0]*ATA[2][1]
+                        + ATA[0][3]*ATA[1][1]*ATA[2][0] + ATA[0][1]*ATA[1][0]*ATA[2][3] + ATA[0][0]*ATA[1][3]*ATA[2][1]) / det_A;
+            Qx[3][0] = ( - ATA[1][0]*ATA[2][1]*ATA[3][2] - ATA[1][1]*ATA[2][2]*ATA[3][0] - ATA[1][2]*ATA[2][0]*ATA[3][1]
+                        + ATA[1][2]*ATA[2][1]*ATA[3][0] + ATA[1][1]*ATA[2][0]*ATA[3][2] + ATA[1][0]*ATA[2][2]*ATA[3][1]) / det_A;
+            Qx[3][1] = (ATA[0][0]*ATA[2][1]*ATA[3][2] + ATA[0][1]*ATA[2][2]*ATA[3][0] + ATA[0][2]*ATA[2][0]*ATA[3][1]
+                        - ATA[0][2]*ATA[2][1]*ATA[3][0] - ATA[0][1]*ATA[2][0]*ATA[3][2] - ATA[0][0]*ATA[2][2]*ATA[3][1]) / det_A;
+            Qx[3][2] = ( - ATA[0][0]*ATA[1][1]*ATA[3][2] - ATA[0][1]*ATA[1][2]*ATA[3][0] - ATA[0][2]*ATA[1][0]*ATA[3][1]
+                        + ATA[0][2]*ATA[1][1]*ATA[3][0] + ATA[0][1]*ATA[1][0]*ATA[3][2] + ATA[0][0]*ATA[1][2]*ATA[3][1]) / det_A;    
+            Qx[3][3] = (ATA[0][0]*ATA[1][1]*ATA[2][2] + ATA[0][1]*ATA[1][2]*ATA[2][0] + ATA[0][2]*ATA[1][0]*ATA[2][1]
+                        - ATA[0][2]*ATA[1][1]*ATA[2][0] - ATA[0][1]*ATA[1][0]*ATA[2][2] - ATA[0][0]*ATA[1][2]*ATA[2][1]) / det_A;
+        }
+
+        //Multiplication
+        double X_vector[4],M[4][num];
+        for (int row = 0; row < 4; ++row) {
+            for (int col= 0; col < num; ++col) {
+                for (int element = 0; element < 4; ++element) {
+                    M[row][col] += Qx[row][element] * transpose_A[element][col];
+                }
+            } 
+        }
+        //2-stage Multiplication
+        for (int row = 0; row < 4; ++row) {
+            for (int col= 0; col < num; ++col) {
+                    X_vector[row] += M[row][col] * L[col];
+            } 
+        }
+        //Update position
+        xa += X_vector[0];
+        ya += X_vector[1];
+        za += X_vector[2];
+        //converge condition
+        double V;
+        for (int row = 0; row < num; ++row) {
+            for (int col= 0; col < 4; ++col) {
+                    V[row] += A[row][col] * X_vector[col];
+            }
+            V[row] -= L[row];
+        }
+        //Multiplication
+        for (int index = 0; index < num; ++index) {
+            V_err += V[index] * V[index];
+        }
+        //update tolerance
+        Err -= V_err;
+    }
+    *RX_x = xa;
+    *RX_y = ya;
+    *RX_z = za;
 }
