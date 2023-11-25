@@ -39,8 +39,6 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
         //Compute signal propagation time
         pseudorange[index] = obsData[index].P1;
         signal_propagation_time = pseudorange[index] / c;
-        int num = sizeof(pseudorange) / sizeof(double);
-         printf("num %d\n",num);
         //Compute signal transmission time
         nominal_transmission_time = navData[satlist->PRN_list[index]].TOE - signal_propagation_time - timediff;
         //Compute satellite clock correction
@@ -104,6 +102,11 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
         index++;
     }
     */
+    while (index < satlist->GPS_num) {
+        printf("GPS_clk_correction = %.19lf\n", GPS_clk_correction[index]);
+        index++;
+    }
+    index = 0;
     //Carte2Ellip
     Cart2Ecip(obsHead->approxPosX, obsHead->approxPosY, obsHead->approxPosZ, &lat, &lon, &height);
     //Get Zenith angle and do Trop and Iono
@@ -122,6 +125,7 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
     //Approximate distance
     //void position_correction (double *trop_delay, double *iono_delay, double *pseudorange, double *GPS_clk_correction, double X_r, double Y_r, double Z_r, double *X_s, double *Y_s, double *Z_s, double *RX_x, double *RX_y, double *RX_z);
     printf("Start position correction\n");
+    printf("Z_r %lf",obsHead->approxPosZ);
     err_flag = position_correction (trop_delay, iono_delay, pseudorange, GPS_clk_correction, obsHead->approxPosX, obsHead->approxPosY, obsHead->approxPosZ, X_s, Y_s, Z_s, &RX_x, &RX_y, &RX_z);
     if (err_flag != 0) {
         printf("failed SPP\n");
@@ -213,19 +217,35 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
     double ATA[4][4] = {0};
     xa = X_r; ya = Y_r; za = Z_r;
     double V_err = 0;
-    double V_err_0 = 1;
+    double V_err_0 = 0;
     double Err;
-    Err = V_err - V_err_0;
+    Err = 1;
+    for (int index = 0; index < num; ++index) {
+        transmit_time[index] = pseudorange[index] / c;
+    }
     while ( fabs(Err) > ERR_TOLLERANCE) {
-        for (int index = 0; index < num; ++index) {
-            transmit_time[index] = pseudorange[index] / c;
+        for (int index = 0; index < num; index++) {
             distance_tx_rx[index] = sqrt(pow((X_s[index] - xa + ya * Omeg_dot_earth * transmit_time[index]),2) + pow((Y_s[index] - ya + xa * Omeg_dot_earth * transmit_time[index]),2) + pow((Z_s[index] - za),2));
             L[index] = pseudorange[index] - distance_tx_rx[index] + GPS_clk_correction[index] * c - iono_delay[index] - trop_delay[index];
+            printf("Zr = %lf\n", za);
             A[index][0] =  -(X_s[index] - xa) / distance_tx_rx[index];
             A[index][1] =  -(Y_s[index] - ya) / distance_tx_rx[index];
             A[index][2] =  -(Z_s[index] - za) / distance_tx_rx[index];
             A[index][3] = 1.;
         }
+        //, L[num]
+        L[0] = 1.558523861668300e+05;
+        L[1] = 1.558533831367149e+05;
+        L[2] = 1.558545538473926e+05;
+        L[3] = 1.558555878474014e+05;
+        L[4] = 1.558523423899544e+05;
+        L[5] = 1.558545381112445e+05;
+        L[6] = 1.558546170176657e+05;
+        L[7] = 1.558516636874133e+05;
+        L[8] = 1.558532681610924e+05;
+        L[9] = 1.558550188023362e+05;
+        L[10] = 1.558522517859158e+05;
+        L[11] = 1.558526969860581e+05;
 
         double transpose_A[4][num];
         // computing the transpose of A
@@ -257,8 +277,10 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
             printf("matrix is singular\n");
             printf("print det_A %lf\n", det_A);
             return 1;
-        }
-        else {
+        } else if ( (sizeof(Qx)/sizeof(double)) != 4*4 ) {
+            printf("matrix size is not correct\n");
+            return 1;
+        } else {
             printf("det = %lf\n",det_A);
             Qx[0][0] = (ATA[1][1]*ATA[2][2]*ATA[3][3] + ATA[1][2]*ATA[2][3]*ATA[3][1] + ATA[1][3]*ATA[2][1]*ATA[3][2]
                         - ATA[1][3]*ATA[2][2]*ATA[3][1] - ATA[1][2]*ATA[2][1]*ATA[3][3] - ATA[1][1]*ATA[2][3]*ATA[3][2]) / det_A;
@@ -298,19 +320,36 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
         // double transpose_A[4][num];
         // X_vector bug
         double X_vector[4],M[4][num];
-        for (int row = 0; row < 4; ++row) {
-            for (int col= 0; col < num; ++col) {
-                for (int element = 0; element < 4; ++element) {
+        int stage_flag = 0;
+        for (int row = 0; row < 4; row++) {
+            for (int col= 0; col < num; col++) {
+                M[row][col] = 0;
+                for (int element = 0; element < 4; element++) {
                     M[row][col] += Qx[row][element] * transpose_A[element][col];
                 }
+            }
+            if ( row == 3) {
+                stage_flag = 1;
             } 
         }
         //2-stage Multiplication
-        for (int row = 0; row < 4; ++row) {
-            for (int col= 0; col < num; ++col) {
-                    X_vector[row] += M[row][col] * L[col];
-            } 
+        if(stage_flag) {
+            for (int row = 0; row < 4; row++) {
+                X_vector[row] = 0;
+                for (int col= 0; col < num; col++) {
+                        X_vector[row] += M[row][col] * L[col];
+                        printf("M = %lf\n",M[row][col]);
+                        printf("L = %lf\n",L[col]);
+                }
+                printf("\n");
+            }
         }
+        
+        printf("\n");
+        for (int j = 0; j < 4; j++) {
+            printf("X = %lf\t", X_vector[j]);
+        }
+        printf("\n");
         //Update position
         xa += X_vector[0];
         ya += X_vector[1];
@@ -318,16 +357,23 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
         //converge condition
         double V[num];
         for (int row = 0; row < num; ++row) {
+            V[row] = 0;
             for (int col= 0; col < 4; ++col) {
                     V[row] += A[row][col] * X_vector[col];
             }
+            printf("V = %lf\n", V[row]);
+            printf("L = %lf\n", L[row]);
+            printf("\n");
             V[row] -= L[row];
+
+            printf("L = %lf\n", L[row]);
+            printf("V = %lf\n", V[row]);
         }
         //print ATA
         printf("Qx\n");
-        for (int i = 0; i < num; ++i) {
+        for (int i = 0; i < 4; ++i) {
             for (int j = 0; j < 4; ++j) {
-                printf("%lf\t", A[i][j]);
+                printf("%lf\t", Qx[i][j]);
             }
             printf("\n");
          }
@@ -337,12 +383,27 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
                 printf("%lf\t", transpose_A[i][j]);
             }
             printf("\n");
-         }
-        //
-        for (int index = 0; index < 4; ++index) {
-            printf("X = %lf\n",X_vector[index]);
         }
         //
+        printf("M\n");
+        for (int i = 0; i < 4; ++i) {
+            for (int j = 0; j < num; ++j) {
+                printf("%lf\t", M[i][j]);
+            }
+            printf("\n");
+        }
+        //
+        printf("\n");
+        for (int j = 0; j < num; ++j) {
+            printf("V = %lf\t", V[j]);
+        }
+        //
+        printf("x_v \n");
+        for (int j = 0; j < 4; ++j) {
+            printf("X = %lf\t", X_vector[j]);
+        }
+        //
+        printf("\n");
         //Multiplication
         for (int index = 0; index < num; ++index) {
             V_err += V[index] * V[index];
@@ -352,6 +413,7 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
         Err = V_err - V_err_0;
         V_err_0 = V_err;
         printf("ERR = %lf\n", fabs(Err));
+        Err = ERR_TOLLERANCE;
     }
     *RX_x = xa;
     *RX_y = ya;
