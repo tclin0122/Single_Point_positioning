@@ -38,7 +38,7 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
         double corrected_lat, corrected_radi, corrected_inclin, x_in_orb, y_in_orb, corrected_ascending_node;
         //Compute signal propagation time
         pseudorange[index] = obsData[index].P1;
-        signal_propagation_time = pseudorange[index] / c;
+        signal_propagation_time = pseudorange[index] / c_light;
         //Compute signal transmission time
         nominal_transmission_time = navData[satlist->PRN_list[index]].TOE - signal_propagation_time - timediff;
         //Compute satellite clock correction
@@ -221,12 +221,12 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
     double Err;
     Err = 1;
     for (int index = 0; index < num; ++index) {
-        transmit_time[index] = pseudorange[index] / c;
+        transmit_time[index] = pseudorange[index] / c_light;
     }
     while ( fabs(Err) > ERR_TOLLERANCE) {
         for (int index = 0; index < num; index++) {
             distance_tx_rx[index] = sqrt(pow((X_s[index] - xa + ya * Omeg_dot_earth * transmit_time[index]),2) + pow((Y_s[index] - ya + xa * Omeg_dot_earth * transmit_time[index]),2) + pow((Z_s[index] - za),2));
-            L[index] = pseudorange[index] - distance_tx_rx[index] + GPS_clk_correction[index] * c - iono_delay[index] - trop_delay[index];
+            L[index] = pseudorange[index] - distance_tx_rx[index] + GPS_clk_correction[index] * c_light - iono_delay[index] - trop_delay[index];
             printf("Zr = %lf\n", za);
             A[index][0] =  -(X_s[index] - xa) / distance_tx_rx[index];
             A[index][1] =  -(Y_s[index] - ya) / distance_tx_rx[index];

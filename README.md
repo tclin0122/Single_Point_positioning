@@ -25,6 +25,10 @@ The data folder includes navigation message, the most important files are the ob
 The document is from Professor Milan Horemuz at KTH, it describes the detail of how to read and implement the SPP algorithm.
 The data is in RINEX_2 format.
 
+## Windows setup
+- Download Make for Windows here for the Setup installation (Complete package, except sources): https://gnuwin32.sourceforge.net/packages/make.htm ;
+- Follow the guidelines from the VSCode tutorial link at https://code.visualstudio.com/docs/cpp/config-mingw .
+
 ## Run the file
 Use Makefile to build the program
 ```

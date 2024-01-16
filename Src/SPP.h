@@ -11,8 +11,8 @@
 #define RH         0.5
 
 //constant from GPS ICD
-#define c              299792458   //speed of light
-#define pi             3.1415926535898; //Pi
+#define c_light              299792458  //speed of light
+#define pi             3.1415926535898 //Pi
 #define mu             3.986005 * pow(10,14)
 #define Omeg_dot_earth 7.2921151467 * pow(10,-5)
 #define F              -4.442807633 * pow(10,-10)
