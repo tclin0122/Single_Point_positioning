@@ -233,19 +233,7 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
             A[index][2] =  -(Z_s[index] - za) / distance_tx_rx[index];
             A[index][3] = 1.;
         }
-        //, L[num]
-        L[0] = 1.558523861668300e+05;
-        L[1] = 1.558533831367149e+05;
-        L[2] = 1.558545538473926e+05;
-        L[3] = 1.558555878474014e+05;
-        L[4] = 1.558523423899544e+05;
-        L[5] = 1.558545381112445e+05;
-        L[6] = 1.558546170176657e+05;
-        L[7] = 1.558516636874133e+05;
-        L[8] = 1.558532681610924e+05;
-        L[9] = 1.558550188023362e+05;
-        L[10] = 1.558522517859158e+05;
-        L[11] = 1.558526969860581e+05;
+        
 
         double transpose_A[4][num];
         // computing the transpose of A
@@ -284,34 +272,35 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
             printf("det = %lf\n",det_A);
             Qx[0][0] = (ATA[1][1]*ATA[2][2]*ATA[3][3] + ATA[1][2]*ATA[2][3]*ATA[3][1] + ATA[1][3]*ATA[2][1]*ATA[3][2]
                         - ATA[1][3]*ATA[2][2]*ATA[3][1] - ATA[1][2]*ATA[2][1]*ATA[3][3] - ATA[1][1]*ATA[2][3]*ATA[3][2]) / det_A;
-            Qx[0][1] = ( - ATA[0][1]*ATA[2][2]*ATA[3][3] - ATA[0][2]*ATA[2][3]*ATA[3][1] - ATA[0][3]*ATA[2][1]*ATA[3][2]
-                        + ATA[0][3]*ATA[2][2]*ATA[3][1] + ATA[0][2]*ATA[2][1]*ATA[3][3] + ATA[0][1]*ATA[2][3]*ATA[3][2]) / det_A;
-            Qx[0][2] = (ATA[0][1]*ATA[1][2]*ATA[3][3] + ATA[0][2]*ATA[1][3]*ATA[3][1] + ATA[0][3]*ATA[1][1]*ATA[3][2]
-                        - ATA[0][3]*ATA[1][2]*ATA[3][1] - ATA[0][2]*ATA[1][1]*ATA[3][3] - ATA[0][1]*ATA[1][3]*ATA[3][2]) / det_A;    
-            Qx[0][3] = ( - ATA[0][1]*ATA[1][2]*ATA[2][3] - ATA[0][2]*ATA[1][3]*ATA[2][1] - ATA[0][3]*ATA[1][1]*ATA[2][2]
-                        + ATA[0][3]*ATA[1][2]*ATA[2][1] + ATA[0][2]*ATA[1][1]*ATA[2][3] + ATA[0][1]*ATA[1][3]*ATA[2][2]) / det_A;
-            Qx[1][0] = ( - ATA[1][0]*ATA[2][2]*ATA[3][3] - ATA[1][2]*ATA[2][3]*ATA[3][0] - ATA[1][3]*ATA[2][0]*ATA[3][2]
+            Qx[0][1] = ( - ATA[1][0]*ATA[2][2]*ATA[3][3] - ATA[1][2]*ATA[2][3]*ATA[3][0] - ATA[1][3]*ATA[2][0]*ATA[3][2]
                         + ATA[1][3]*ATA[2][2]*ATA[3][0] + ATA[1][2]*ATA[2][0]*ATA[3][3] + ATA[1][0]*ATA[2][3]*ATA[3][2]) / det_A;
+            Qx[0][2] = (ATA[1][0]*ATA[2][1]*ATA[3][3] + ATA[1][1]*ATA[2][3]*ATA[3][0] + ATA[1][3]*ATA[2][0]*ATA[3][1]
+                        - ATA[1][3]*ATA[2][1]*ATA[3][0] - ATA[1][1]*ATA[2][0]*ATA[3][3] - ATA[1][0]*ATA[2][3]*ATA[3][1]) / det_A;
+            Qx[0][3] = ( - ATA[1][0]*ATA[2][1]*ATA[3][2] - ATA[1][1]*ATA[2][2]*ATA[3][0] - ATA[1][2]*ATA[2][0]*ATA[3][1]
+                        + ATA[1][2]*ATA[2][1]*ATA[3][0] + ATA[1][1]*ATA[2][0]*ATA[3][2] + ATA[1][0]*ATA[2][2]*ATA[3][1]) / det_A;
+            Qx[1][0] = ( - ATA[0][1]*ATA[2][2]*ATA[3][3] - ATA[0][2]*ATA[2][3]*ATA[3][1] - ATA[0][3]*ATA[2][1]*ATA[3][2]
+                        + ATA[0][3]*ATA[2][2]*ATA[3][1] + ATA[0][2]*ATA[2][1]*ATA[3][3] + ATA[0][1]*ATA[2][3]*ATA[3][2]) / det_A;
             Qx[1][1] = (ATA[0][0]*ATA[2][2]*ATA[3][3] + ATA[0][2]*ATA[2][3]*ATA[3][0] + ATA[0][3]*ATA[2][0]*ATA[3][2]
                         - ATA[0][3]*ATA[2][2]*ATA[3][0] - ATA[0][2]*ATA[2][0]*ATA[3][3] - ATA[0][0]*ATA[2][3]*ATA[3][2]) / det_A;
-            Qx[1][2] = ( - ATA[0][0]*ATA[1][2]*ATA[3][3] - ATA[0][2]*ATA[1][3]*ATA[3][0] - ATA[0][3]*ATA[1][0]*ATA[3][2]
-                        + ATA[0][3]*ATA[1][2]*ATA[3][0] + ATA[0][2]*ATA[1][0]*ATA[3][3] + ATA[0][0]*ATA[1][3]*ATA[3][2]) / det_A;       
-            Qx[1][3] = (ATA[0][0]*ATA[1][2]*ATA[2][3] + ATA[0][2]*ATA[1][3]*ATA[2][0] + ATA[0][3]*ATA[1][0]*ATA[2][2]
-                        - ATA[0][3]*ATA[1][2]*ATA[2][0] - ATA[0][2]*ATA[1][0]*ATA[2][3] - ATA[0][0]*ATA[1][3]*ATA[2][2]) / det_A;
-            Qx[2][0] = (ATA[1][0]*ATA[2][1]*ATA[3][3] + ATA[1][1]*ATA[2][3]*ATA[3][0] + ATA[1][3]*ATA[2][0]*ATA[3][2]
-                        - ATA[1][3]*ATA[2][1]*ATA[3][0] - ATA[1][1]*ATA[2][0]*ATA[3][3] - ATA[1][0]*ATA[2][3]*ATA[3][1]) / det_A;
-            Qx[2][1] = ( - ATA[0][0]*ATA[2][1]*ATA[3][3] - ATA[0][1]*ATA[2][3]*ATA[3][0] - ATA[0][3]*ATA[2][0]*ATA[3][1]
+            Qx[1][2] = ( - ATA[0][0]*ATA[2][1]*ATA[3][3] - ATA[0][1]*ATA[2][3]*ATA[3][0] - ATA[0][3]*ATA[2][0]*ATA[3][1]
                         + ATA[0][3]*ATA[2][1]*ATA[3][0] + ATA[0][1]*ATA[2][0]*ATA[3][3] + ATA[0][0]*ATA[2][3]*ATA[3][1]) / det_A;
-            Qx[2][2] = (ATA[0][0]*ATA[1][1]*ATA[3][3] + ATA[0][1]*ATA[1][3]*ATA[3][0] + ATA[0][3]*ATA[1][0]*ATA[3][1]
-                        - ATA[0][3]*ATA[1][1]*ATA[3][0] - ATA[0][1]*ATA[1][0]*ATA[3][3] - ATA[0][0]*ATA[1][3]*ATA[3][1]) / det_A;     
-            Qx[2][3] = ( - ATA[0][0]*ATA[1][1]*ATA[2][3] - ATA[0][1]*ATA[1][3]*ATA[2][0] - ATA[0][3]*ATA[1][0]*ATA[2][1]
-                        + ATA[0][3]*ATA[1][1]*ATA[2][0] + ATA[0][1]*ATA[1][0]*ATA[2][3] + ATA[0][0]*ATA[1][3]*ATA[2][1]) / det_A;
-            Qx[3][0] = ( - ATA[1][0]*ATA[2][1]*ATA[3][2] - ATA[1][1]*ATA[2][2]*ATA[3][0] - ATA[1][2]*ATA[2][0]*ATA[3][1]
-                        + ATA[1][2]*ATA[2][1]*ATA[3][0] + ATA[1][1]*ATA[2][0]*ATA[3][2] + ATA[1][0]*ATA[2][2]*ATA[3][1]) / det_A;
-            Qx[3][1] = (ATA[0][0]*ATA[2][1]*ATA[3][2] + ATA[0][1]*ATA[2][2]*ATA[3][0] + ATA[0][2]*ATA[2][0]*ATA[3][1]
+            Qx[1][3] = (ATA[0][0]*ATA[2][1]*ATA[3][2] + ATA[0][1]*ATA[2][2]*ATA[3][0] + ATA[0][3]*ATA[2][0]*ATA[3][1]
                         - ATA[0][2]*ATA[2][1]*ATA[3][0] - ATA[0][1]*ATA[2][0]*ATA[3][2] - ATA[0][0]*ATA[2][2]*ATA[3][1]) / det_A;
-            Qx[3][2] = ( - ATA[0][0]*ATA[1][1]*ATA[3][2] - ATA[0][1]*ATA[1][2]*ATA[3][0] - ATA[0][2]*ATA[1][0]*ATA[3][1]
-                        + ATA[0][2]*ATA[1][1]*ATA[3][0] + ATA[0][1]*ATA[1][0]*ATA[3][2] + ATA[0][0]*ATA[1][2]*ATA[3][1]) / det_A;    
+            Qx[2][0] = (ATA[0][1]*ATA[1][2]*ATA[3][3] + ATA[0][2]*ATA[1][3]*ATA[3][1] + ATA[0][3]*ATA[1][1]*ATA[3][2]
+                        - ATA[0][3]*ATA[1][2]*ATA[3][1] - ATA[0][2]*ATA[1][1]*ATA[3][3] - ATA[0][1]*ATA[1][3]*ATA[3][2]) / det_A;
+            Qx[2][1] = ( - ATA[0][0]*ATA[1][2]*ATA[3][3] - ATA[0][2]*ATA[1][3]*ATA[3][0] - ATA[0][3]*ATA[1][0]*ATA[3][2]
+                        + ATA[0][3]*ATA[1][2]*ATA[3][0] + ATA[0][2]*ATA[1][0]*ATA[3][3] + ATA[0][0]*ATA[1][3]*ATA[3][2]) / det_A;
+            Qx[2][2] = (ATA[0][0]*ATA[1][1]*ATA[3][3] + ATA[0][1]*ATA[1][3]*ATA[3][0] + ATA[0][3]*ATA[1][0]*ATA[3][1]
+                        - ATA[0][3]*ATA[1][1]*ATA[3][0] - ATA[0][1]*ATA[1][0]*ATA[3][3] - ATA[0][0]*ATA[1][3]*ATA[3][1]) / det_A;
+            Qx[2][3] = ( - ATA[0][0]*ATA[1][1]*ATA[3][2] - ATA[0][1]*ATA[1][2]*ATA[3][0] - ATA[0][2]*ATA[1][0]*ATA[3][1]
+                        + ATA[0][2]*ATA[1][1]*ATA[3][0] + ATA[0][1]*ATA[1][0]*ATA[3][2] + ATA[0][0]*ATA[1][2]*ATA[3][1]) / det_A;
+            Qx[3][0] = ( - ATA[0][1]*ATA[1][2]*ATA[2][3] - ATA[0][2]*ATA[1][3]*ATA[2][1] - ATA[0][3]*ATA[1][1]*ATA[2][2]
+                        + ATA[0][3]*ATA[1][2]*ATA[2][1] + ATA[0][2]*ATA[1][1]*ATA[2][3] + ATA[0][1]*ATA[1][3]*ATA[2][2]) / det_A;
+            Qx[3][1] = (ATA[0][0]*ATA[1][2]*ATA[2][3] + ATA[0][2]*ATA[1][3]*ATA[2][0] + ATA[0][3]*ATA[1][0]*ATA[2][2]
+                        - ATA[0][3]*ATA[1][2]*ATA[2][0] - ATA[0][2]*ATA[1][0]*ATA[2][3] - ATA[0][0]*ATA[1][3]*ATA[2][2]) / det_A;
+            Qx[3][2] = ( - ATA[0][0]*ATA[1][1]*ATA[2][3] - ATA[0][1]*ATA[1][3]*ATA[2][0] - ATA[0][3]*ATA[1][0]*ATA[2][1]
+                        + ATA[0][3]*ATA[1][1]*ATA[2][0] + ATA[0][1]*ATA[1][0]*ATA[2][3] + ATA[0][0]*ATA[1][3]*ATA[2][1]) / det_A;
+
             Qx[3][3] = (ATA[0][0]*ATA[1][1]*ATA[2][2] + ATA[0][1]*ATA[1][2]*ATA[2][0] + ATA[0][2]*ATA[1][0]*ATA[2][1]
                         - ATA[0][2]*ATA[1][1]*ATA[2][0] - ATA[0][1]*ATA[1][0]*ATA[2][2] - ATA[0][0]*ATA[1][2]*ATA[2][1]) / det_A;
         }
@@ -327,12 +316,13 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
                 for (int element = 0; element < 4; element++) {
                     M[row][col] += Qx[row][element] * transpose_A[element][col];
                 }
-            }
-            if ( row == 3) {
-                stage_flag = 1;
+                X_vector[row] += M[row][col] * L[col];
+                printf("M = %lf\n",M[row][col]);
+                printf("L = %lf\n",L[col]);
             } 
         }
         //2-stage Multiplication
+        /*
         if(stage_flag) {
             for (int row = 0; row < 4; row++) {
                 X_vector[row] = 0;
@@ -344,6 +334,7 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
                 printf("\n");
             }
         }
+        */
         
         printf("\n");
         for (int j = 0; j < 4; j++) {
