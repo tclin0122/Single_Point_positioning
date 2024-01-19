@@ -227,7 +227,6 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
         for (int index = 0; index < num; index++) {
             distance_tx_rx[index] = sqrt(pow((X_s[index] - xa + ya * Omeg_dot_earth * transmit_time[index]),2) + pow((Y_s[index] - ya + xa * Omeg_dot_earth * transmit_time[index]),2) + pow((Z_s[index] - za),2));
             L[index] = pseudorange[index] - distance_tx_rx[index] + GPS_clk_correction[index] * c_light - iono_delay[index] - trop_delay[index];
-            printf("Zr = %lf\n", za);
             A[index][0] =  -(X_s[index] - xa) / distance_tx_rx[index];
             A[index][1] =  -(Y_s[index] - ya) / distance_tx_rx[index];
             A[index][2] =  -(Z_s[index] - za) / distance_tx_rx[index];
@@ -300,12 +299,11 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
                         - ATA[0][3]*ATA[1][2]*ATA[2][0] - ATA[0][2]*ATA[1][0]*ATA[2][3] - ATA[0][0]*ATA[1][3]*ATA[2][2]) / det_A;
             Qx[3][2] = ( - ATA[0][0]*ATA[1][1]*ATA[2][3] - ATA[0][1]*ATA[1][3]*ATA[2][0] - ATA[0][3]*ATA[1][0]*ATA[2][1]
                         + ATA[0][3]*ATA[1][1]*ATA[2][0] + ATA[0][1]*ATA[1][0]*ATA[2][3] + ATA[0][0]*ATA[1][3]*ATA[2][1]) / det_A;
-
             Qx[3][3] = (ATA[0][0]*ATA[1][1]*ATA[2][2] + ATA[0][1]*ATA[1][2]*ATA[2][0] + ATA[0][2]*ATA[1][0]*ATA[2][1]
                         - ATA[0][2]*ATA[1][1]*ATA[2][0] - ATA[0][1]*ATA[1][0]*ATA[2][2] - ATA[0][0]*ATA[1][2]*ATA[2][1]) / det_A;
         }
 
-        //Multiplication <- To do  bug
+        //Multiplication <--------------- To do  bug: second row alittle weird
         // double transpose_A[4][num];
         // X_vector bug
         double X_vector[4],M[4][num];
@@ -316,13 +314,29 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
                 for (int element = 0; element < 4; element++) {
                     M[row][col] += Qx[row][element] * transpose_A[element][col];
                 }
-                X_vector[row] += M[row][col] * L[col];
-                printf("M = %lf\n",M[row][col]);
-                printf("L = %lf\n",L[col]);
+                //printf("M = %lf\n",M[row][col]);
+                //printf("row %d col%d\n", row, col);
             } 
         }
-        //2-stage Multiplication
-        /*
+        stage_flag = 1;
+        printf("Size %lu\n", sizeof(M)/sizeof(double));
+        //L
+        
+        L[0] = 1.558523861668300e+05;
+        L[1] = 1.558533831367149e+05;
+        L[2] = 1.558545538473926e+05;
+        L[3] = 1.558555878474014e+05;
+        L[4] = 1.558523423899544e+05;
+        L[5] = 1.558545381112445e+05;
+        L[6] = 1.558546170176657e+05;
+        L[7] = 1.558516636874133e+05;
+        L[8] = 1.558532681610924e+05;
+        L[9] = 1.558550188023362e+05;
+        L[10] = 1.558522517859158e+05;
+        L[11] = 1.558526969860581e+05;
+        
+
+        //2-stage Multiplication <--------------- To do  bug
         if(stage_flag) {
             for (int row = 0; row < 4; row++) {
                 X_vector[row] = 0;
@@ -334,6 +348,7 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
                 printf("\n");
             }
         }
+        /*
         */
         
         printf("\n");
@@ -352,13 +367,13 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
             for (int col= 0; col < 4; ++col) {
                     V[row] += A[row][col] * X_vector[col];
             }
-            printf("V = %lf\n", V[row]);
-            printf("L = %lf\n", L[row]);
-            printf("\n");
+            //printf("V = %lf\n", V[row]);
+            //printf("L = %lf\n", L[row]);
+            //printf("\n");
             V[row] -= L[row];
 
-            printf("L = %lf\n", L[row]);
-            printf("V = %lf\n", V[row]);
+            //printf("L = %lf\n", L[row]);
+            //printf("V = %lf\n", V[row]);
         }
         //print ATA
         printf("Qx\n");
