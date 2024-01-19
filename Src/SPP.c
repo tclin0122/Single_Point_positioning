@@ -283,7 +283,7 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
                         - ATA[0][3]*ATA[2][2]*ATA[3][0] - ATA[0][2]*ATA[2][0]*ATA[3][3] - ATA[0][0]*ATA[2][3]*ATA[3][2]) / det_A;
             Qx[1][2] = ( - ATA[0][0]*ATA[2][1]*ATA[3][3] - ATA[0][1]*ATA[2][3]*ATA[3][0] - ATA[0][3]*ATA[2][0]*ATA[3][1]
                         + ATA[0][3]*ATA[2][1]*ATA[3][0] + ATA[0][1]*ATA[2][0]*ATA[3][3] + ATA[0][0]*ATA[2][3]*ATA[3][1]) / det_A;
-            Qx[1][3] = (ATA[0][0]*ATA[2][1]*ATA[3][2] + ATA[0][1]*ATA[2][2]*ATA[3][0] + ATA[0][3]*ATA[2][0]*ATA[3][1]
+            Qx[1][3] = (ATA[0][0]*ATA[2][1]*ATA[3][2] + ATA[0][1]*ATA[2][2]*ATA[3][0] + ATA[0][2]*ATA[2][0]*ATA[3][1]
                         - ATA[0][2]*ATA[2][1]*ATA[3][0] - ATA[0][1]*ATA[2][0]*ATA[3][2] - ATA[0][0]*ATA[2][2]*ATA[3][1]) / det_A;
             Qx[2][0] = (ATA[0][1]*ATA[1][2]*ATA[3][3] + ATA[0][2]*ATA[1][3]*ATA[3][1] + ATA[0][3]*ATA[1][1]*ATA[3][2]
                         - ATA[0][3]*ATA[1][2]*ATA[3][1] - ATA[0][2]*ATA[1][1]*ATA[3][3] - ATA[0][1]*ATA[1][3]*ATA[3][2]) / det_A;
@@ -303,9 +303,7 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
                         - ATA[0][2]*ATA[1][1]*ATA[2][0] - ATA[0][1]*ATA[1][0]*ATA[2][2] - ATA[0][0]*ATA[1][2]*ATA[2][1]) / det_A;
         }
 
-        //Multiplication <--------------- To do  bug: second row alittle weird
-        // double transpose_A[4][num];
-        // X_vector bug
+        //Multiplication 
         double X_vector[4],M[4][num];
         int stage_flag = 0;
         for (int row = 0; row < 4; row++) {
@@ -314,52 +312,49 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
                 for (int element = 0; element < 4; element++) {
                     M[row][col] += Qx[row][element] * transpose_A[element][col];
                 }
-                //printf("M = %lf\n",M[row][col]);
-                //printf("row %d col%d\n", row, col);
             } 
         }
         stage_flag = 1;
-        printf("Size %lu\n", sizeof(M)/sizeof(double));
+        //printf("Size %lu\n", sizeof(M)/sizeof(double));
         //L
+        L[0] = 1.558531368529651e+05;
+        L[1] = 1.558544505611761e+05;
+        L[2] = 1.558555158559211e+05;
+        L[3] = 1.558538636308731e+05;
+        L[4] = 1.558517675312629e+05;
+        L[5] = 1.558537613040965e+05;
+        L[6] = 1.558547983146661e+05;
+        L[7] = 1.558515947888472e+05;
+        L[8] = 1.558522977016945e+05;
+        L[9] = 1.558568646658759e+05;
+        L[10] = 1.558516207759794e+05;
+        L[11] = 1.558532468589780e+05;
+        /*
+        */
         
-        L[0] = 1.558523861668300e+05;
-        L[1] = 1.558533831367149e+05;
-        L[2] = 1.558545538473926e+05;
-        L[3] = 1.558555878474014e+05;
-        L[4] = 1.558523423899544e+05;
-        L[5] = 1.558545381112445e+05;
-        L[6] = 1.558546170176657e+05;
-        L[7] = 1.558516636874133e+05;
-        L[8] = 1.558532681610924e+05;
-        L[9] = 1.558550188023362e+05;
-        L[10] = 1.558522517859158e+05;
-        L[11] = 1.558526969860581e+05;
-        
-
-        //2-stage Multiplication <--------------- To do  bug
+        //2-stage Multiplication
         if(stage_flag) {
             for (int row = 0; row < 4; row++) {
                 X_vector[row] = 0;
                 for (int col= 0; col < num; col++) {
                         X_vector[row] += M[row][col] * L[col];
-                        printf("M = %lf\n",M[row][col]);
-                        printf("L = %lf\n",L[col]);
                 }
                 printf("\n");
             }
         }
         /*
         */
-        
+        //correct!!!
         printf("\n");
         for (int j = 0; j < 4; j++) {
-            printf("X = %lf\t", X_vector[j]);
+            printf("X = %.9f\t", X_vector[j]);
         }
         printf("\n");
         //Update position
         xa += X_vector[0];
         ya += X_vector[1];
         za += X_vector[2];
+
         //converge condition
         double V[num];
         for (int row = 0; row < num; ++row) {
@@ -375,41 +370,13 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
             //printf("L = %lf\n", L[row]);
             //printf("V = %lf\n", V[row]);
         }
-        //print ATA
-        printf("Qx\n");
-        for (int i = 0; i < 4; ++i) {
-            for (int j = 0; j < 4; ++j) {
-                printf("%lf\t", Qx[i][j]);
-            }
-            printf("\n");
-         }
-        printf("\n");
-        for (int i = 0; i < 4; ++i) {
-            for (int j = 0; j < num; ++j) {
-                printf("%lf\t", transpose_A[i][j]);
-            }
-            printf("\n");
-        }
-        //
-        printf("M\n");
-        for (int i = 0; i < 4; ++i) {
-            for (int j = 0; j < num; ++j) {
-                printf("%lf\t", M[i][j]);
-            }
-            printf("\n");
-        }
-        //
+       
         printf("\n");
         for (int j = 0; j < num; ++j) {
             printf("V = %lf\t", V[j]);
         }
         //
-        printf("x_v \n");
-        for (int j = 0; j < 4; ++j) {
-            printf("X = %lf\t", X_vector[j]);
-        }
-        //
-        printf("\n");
+
         //Multiplication
         for (int index = 0; index < num; ++index) {
             V_err += V[index] * V[index];
