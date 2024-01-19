@@ -92,21 +92,13 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
     }
     index = 0;
     /*
-    // show the satellite coord.
-    while (index < satlist->GPS_num) {
-        printf("PRN = %d\n", navData[satlist->PRN_list[index]].PRN);
-        printf("X_s = %lf\n",X_s[index]);
-        printf("Y_s = %lf\n",Y_s[index]);
-        printf("Z_s = %lf\n",Z_s[index]);
-        //update the index
-        index++;
-    }
-    */
     while (index < satlist->GPS_num) {
         printf("GPS_clk_correction = %.19lf\n", GPS_clk_correction[index]);
         index++;
     }
     index = 0;
+    */
+
     //Carte2Ellip
     Cart2Ecip(obsHead->approxPosX, obsHead->approxPosY, obsHead->approxPosZ, &lat, &lon, &height);
     //Get Zenith angle and do Trop and Iono
@@ -125,7 +117,6 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
     //Approximate distance
     //void position_correction (double *trop_delay, double *iono_delay, double *pseudorange, double *GPS_clk_correction, double X_r, double Y_r, double Z_r, double *X_s, double *Y_s, double *Z_s, double *RX_x, double *RX_y, double *RX_z);
     printf("Start position correction\n");
-    printf("Z_r %lf",obsHead->approxPosZ);
     err_flag = position_correction (trop_delay, iono_delay, pseudorange, GPS_clk_correction, obsHead->approxPosX, obsHead->approxPosY, obsHead->approxPosZ, X_s, Y_s, Z_s, &RX_x, &RX_y, &RX_z);
     if (err_flag != 0) {
         printf("failed SPP\n");
@@ -134,8 +125,6 @@ int spp(struct DataGPS *navData, struct ObsData *obsData, struct ObsHeaderInfo *
     printf("RX_X %lf\n", RX_x);
     printf("RX_Y %lf\n", RX_y);
     printf("RX_Z %lf\n", RX_z);
-    /*
-    */
 
     return 0;
 }
@@ -211,8 +200,7 @@ void trop (double Zenth, double height, double *d_trop) {
 int position_correction (double trop_delay[], double iono_delay[], double pseudorange[], double GPS_clk_correction[], double X_r, double Y_r, double Z_r, double X_s[], double Y_s[], double Z_s[], double *RX_x, double *RX_y, double *RX_z) {    
     double xa = 0., ya = 0., za = 0.;
     int num = 12;
-    
-    printf("num %d\n",num);
+
     double transmit_time[num], distance_tx_rx[num], L[num], ax[num], ay[num], az[num], A[num][4];
     double ATA[4][4] = {0};
     xa = X_r; ya = Y_r; za = Z_r;
@@ -268,7 +256,7 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
             printf("matrix size is not correct\n");
             return 1;
         } else {
-            printf("det = %lf\n",det_A);
+            //printf("det = %lf\n",det_A);
             Qx[0][0] = (ATA[1][1]*ATA[2][2]*ATA[3][3] + ATA[1][2]*ATA[2][3]*ATA[3][1] + ATA[1][3]*ATA[2][1]*ATA[3][2]
                         - ATA[1][3]*ATA[2][2]*ATA[3][1] - ATA[1][2]*ATA[2][1]*ATA[3][3] - ATA[1][1]*ATA[2][3]*ATA[3][2]) / det_A;
             Qx[0][1] = ( - ATA[1][0]*ATA[2][2]*ATA[3][3] - ATA[1][2]*ATA[2][3]*ATA[3][0] - ATA[1][3]*ATA[2][0]*ATA[3][2]
@@ -302,7 +290,6 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
             Qx[3][3] = (ATA[0][0]*ATA[1][1]*ATA[2][2] + ATA[0][1]*ATA[1][2]*ATA[2][0] + ATA[0][2]*ATA[1][0]*ATA[2][1]
                         - ATA[0][2]*ATA[1][1]*ATA[2][0] - ATA[0][1]*ATA[1][0]*ATA[2][2] - ATA[0][0]*ATA[1][2]*ATA[2][1]) / det_A;
         }
-
         //Multiplication 
         double X_vector[4],M[4][num];
         int stage_flag = 0;
@@ -331,7 +318,6 @@ int position_correction (double trop_delay[], double iono_delay[], double pseudo
         L[11] = 1.558532468589780e+05;
         /*
         */
-        
         //2-stage Multiplication
         if(stage_flag) {
             for (int row = 0; row < 4; row++) {
