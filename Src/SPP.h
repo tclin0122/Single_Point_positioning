@@ -1,7 +1,6 @@
 #ifndef SPP_H_
 #define SPP_H_
 
-#define DEG_2_RADI 0.0174532925
 #define Re         6371000
 #define f          1575.42e6
 #define hi         350000
@@ -16,6 +15,8 @@
 #define mu             3.986005 * pow(10,14)
 #define Omeg_dot_earth 7.2921151467 * pow(10,-5)
 #define F              -4.442807633 * pow(10,-10)
+
+#define DEG_2_RADI pi/180
 
 #define ERR_TOLLERANCE 1e-5
 
